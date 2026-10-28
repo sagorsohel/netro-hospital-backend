@@ -157,3 +157,109 @@ export const expenses = pgTable("expenses", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// 9. Staff Profiles table (Section 4.5 HR & Staff)
+export const staff = pgTable("staff", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  designation: varchar("designation", { length: 100 }).notNull(), // Nurse, OT Tech, Lab In-charge, etc.
+  departmentId: varchar("department_id", { length: 64 }),
+  department: varchar("department", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  address: varchar("address", { length: 500 }),
+  photo: varchar("photo", { length: 500 }),
+  joiningDate: varchar("joining_date", { length: 50 }),
+  salary: numeric("salary", { precision: 12, scale: 2 }).default("25000.00"),
+  bloodGroup: varchar("blood_group", { length: 10 }),
+  emergencyContact: varchar("emergency_contact", { length: 50 }),
+  qualification: varchar("qualification", { length: 255 }),
+  status: varchar("status", { length: 50 }).default("Active"), // 'Active', 'On Leave', 'Resigned'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 10. Duty Rosters & Shift Planning (Section 4.5 Shift & Roster Management)
+export const dutyRosters = pgTable("duty_rosters", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  staffId: varchar("staff_id", { length: 64 }).notNull(),
+  staffName: varchar("staff_name", { length: 255 }).notNull(),
+  staffRole: varchar("staff_role", { length: 100 }),
+  department: varchar("department", { length: 255 }).notNull(),
+  shift: varchar("shift", { length: 100 }).notNull(), // 'Morning (08:00 AM - 04:00 PM)', 'Evening (04:00 PM - 12:00 AM)', 'Night (12:00 AM - 08:00 AM)'
+  date: varchar("date", { length: 50 }).notNull(),
+  wardOrRoom: varchar("ward_or_room", { length: 100 }),
+  status: varchar("status", { length: 50 }).default("Scheduled"), // 'Scheduled', 'Present', 'Completed', 'Absent'
+  notes: varchar("notes", { length: 500 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// 11. Salary & Payroll Management (Section 4.5 Salary Management)
+export const payrolls = pgTable("payrolls", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  staffId: varchar("staff_id", { length: 64 }).notNull(),
+  staffName: varchar("staff_name", { length: 255 }).notNull(),
+  month: varchar("month", { length: 50 }).notNull(), // e.g. "October 2026"
+  basicSalary: numeric("basic_salary", { precision: 12, scale: 2 }).notNull(),
+  bonus: numeric("bonus", { precision: 12, scale: 2 }).default("0.00"),
+  deduction: numeric("deduction", { precision: 12, scale: 2 }).default("0.00"),
+  netSalary: numeric("net_salary", { precision: 12, scale: 2 }).notNull(),
+  paymentStatus: varchar("payment_status", { length: 50 }).default("Paid"), // 'Paid', 'Pending'
+  paymentDate: varchar("payment_date", { length: 50 }),
+  paymentMethod: varchar("payment_method", { length: 50 }).default("Bank Transfer"),
+  remarks: varchar("remarks", { length: 500 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// 12. Leave Management (Section 4.5 Leave Management)
+export const leaveRequests = pgTable("leave_requests", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  staffId: varchar("staff_id", { length: 64 }).notNull(),
+  staffName: varchar("staff_name", { length: 255 }).notNull(),
+  leaveType: varchar("leave_type", { length: 100 }).notNull(), // 'Casual Leave', 'Sick Leave', 'Annual Leave', 'Maternity Leave', 'Emergency Leave'
+  startDate: varchar("start_date", { length: 50 }).notNull(),
+  endDate: varchar("end_date", { length: 50 }).notNull(),
+  totalDays: integer("total_days").notNull().default(1),
+  reason: varchar("reason", { length: 500 }).notNull(),
+  status: varchar("status", { length: 50 }).default("Pending"), // 'Pending', 'Approved', 'Rejected'
+  approvedBy: varchar("approved_by", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// 13. Equipment Inventory & Tracking (Section 4.6 Equipment Tracking)
+export const equipment = pgTable("equipment", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  modelNo: varchar("model_no", { length: 100 }),
+  serialNumber: varchar("serial_number", { length: 100 }),
+  category: varchar("category", { length: 100 }).notNull(), // 'Diagnostic Imaging', 'Surgical & OT', 'Intensive Care (ICU)', etc.
+  quantity: integer("quantity").default(1),
+  roomNumber: varchar("room_number", { length: 100 }),
+  floor: varchar("floor", { length: 100 }),
+  department: varchar("department", { length: 255 }).notNull(),
+  manufacturer: varchar("manufacturer", { length: 255 }),
+  purchaseDate: varchar("purchase_date", { length: 50 }),
+  warrantyExpiry: varchar("warranty_expiry", { length: 50 }),
+  status: varchar("status", { length: 50 }).default("Functional"), // 'Functional', 'Under Maintenance', 'Non-functional'
+  lastServiceDate: varchar("last_service_date", { length: 50 }),
+  nextServiceDate: varchar("next_service_date", { length: 50 }),
+  serviceNotes: varchar("service_notes", { length: 1000 }),
+  technicianContact: varchar("technician_contact", { length: 100 }),
+  photo: varchar("photo", { length: 500 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 14. Equipment Servicing & Maintenance Logs (Section 4.6 Maintenance History)
+export const maintenanceLogs = pgTable("maintenance_logs", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  equipmentId: varchar("equipment_id", { length: 64 }).notNull(),
+  equipmentName: varchar("equipment_name", { length: 255 }).notNull(),
+  serviceDate: varchar("service_date", { length: 50 }).notNull(),
+  servicedBy: varchar("serviced_by", { length: 255 }).notNull(),
+  cost: numeric("cost", { precision: 12, scale: 2 }).default("0.00"),
+  description: varchar("description", { length: 1000 }).notNull(),
+  statusAfterService: varchar("status_after_service", { length: 50 }).default("Functional"),
+  nextScheduledDate: varchar("next_scheduled_date", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+

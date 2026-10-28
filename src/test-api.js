@@ -120,15 +120,11 @@ const runTests = async () => {
   console.log("\n🎉 ALL TESTS PASSED SUCCESSFULLY! Neon DB + Drizzle ORM + JWT Auth is 100% operational!");
 };
 
-// Start server and run tests
-import("./server.js").then(async () => {
-  setTimeout(async () => {
-    try {
-      await runTests();
-      process.exit(0);
-    } catch (err) {
-      console.error("\n❌ Test failed:", err);
-      process.exit(1);
-    }
-  }, 1000);
-});
+try {
+  await runTests();
+  process.exit(0);
+} catch (err) {
+  console.error("\n❌ Test failed:", err);
+  process.exit(1);
+}
+

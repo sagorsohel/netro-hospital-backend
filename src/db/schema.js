@@ -138,3 +138,22 @@ export const departments = pgTable("departments", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// 8. Expenses table (Hospital Expense Management)
+export const expenses = pgTable("expenses", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: varchar("description", { length: 1000 }),
+  date: varchar("date", { length: 50 }).notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  purpose: varchar("purpose", { length: 500 }),
+  category: varchar("category", { length: 100 }).notNull(),
+  billCopy: varchar("bill_copy", { length: 500 }),
+  voucherNo: varchar("voucher_no", { length: 100 }),
+  paymentMethod: varchar("payment_method", { length: 50 }).default("Cash"),
+  paidTo: varchar("paid_to", { length: 255 }),
+  status: varchar("status", { length: 50 }).default("Paid"),
+  recordedBy: varchar("recorded_by", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+

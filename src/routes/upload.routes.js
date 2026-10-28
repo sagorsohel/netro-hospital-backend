@@ -1,0 +1,66 @@
+import express from 'express';
+import multer from 'multer';
+import { uploadBufferToCloudinary } from '../config/cloudinary.js';
+import { verifyToken } from '../middleware/auth.js';
+
+
+const router = express.Router();
+
+// Memory storage for direct buffer upload to Cloudinary
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  },
+});
+
+/**
+ * @route   POST /api/upload/image
+ * @desc    Upload department image/icon to Cloudinary
+ * @access  Private
+ */
+router.post('/image', verifyToken, upload.single('file'), async (req, res, next) => {
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image file uploaded. Please provide a "file" field.',
+      });
+    }
+
+    const folder = req.body.folder || 'netro-hospital/departments';
+    const filename = req.file.originalname || `upload_${Date.now()}`;
+
+    // Upload to Cloudinary
+    try {
+      const url = await uploadBufferToCloudinary(req.file.buffer, folder, filename);
+      return res.status(200).json({
+        success: true,
+        url,
+        message: 'Image uploaded to Cloudinary successfully.',
+      });
+    } catch (uploadError) {
+      // If Cloudinary env vars missing, fallback gracefully to a mock data url or error
+      if (uploadError.message.includes('Cloudinary is not configured')) {
+        return res.status(400).json({
+          success: false,
+          message: uploadError.message,
+          hint: 'Please add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in netro-backend/.env',
+        });
+      }
+      throw uploadError;
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;

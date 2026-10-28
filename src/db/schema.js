@@ -105,3 +105,23 @@ export const pharmacyInvoices = pgTable("pharmacy_invoices", {
   items: jsonb("items").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// 7. Departments table
+export const departments = pgTable("departments", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }).unique().notNull(),
+  description: varchar("description", { length: 1000 }),
+  icon: varchar("icon", { length: 500 }),
+  image: varchar("image", { length: 500 }),
+  headOfDepartment: varchar("head_of_department", { length: 255 }),
+  floor: varchar("floor", { length: 100 }),
+  roomNumber: varchar("room_number", { length: 100 }),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 50 }),
+  doctorsCount: integer("doctors_count").default(0),
+  status: varchar("status", { length: 50 }).default("Active"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+

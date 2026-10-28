@@ -9,10 +9,13 @@ import doctorRoutes from "./routes/doctor.routes.js";
 import patientRoutes from "./routes/patient.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import pharmacyRoutes from "./routes/pharmacy.routes.js";
+import departmentRoutes from "./routes/department.routes.js";
+import uploadRoutes from "./routes/upload.routes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import { db } from "./db/index.js";
 import { users } from "./db/schema.js";
 import { seedDatabase } from "./db/seed.js";
+
 
 dotenv.config();
 
@@ -70,6 +73,9 @@ app.use("/api/doctors", doctorRoutes);
 app.use("/api/patients", patientRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/pharmacy", pharmacyRoutes);
+app.use("/api/departments", departmentRoutes);
+app.use("/api/upload", uploadRoutes);
+
 
 // Error Handling
 app.use(notFound);

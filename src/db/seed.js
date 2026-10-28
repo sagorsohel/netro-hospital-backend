@@ -1,7 +1,8 @@
 import bcrypt from "bcryptjs";
 import { db } from "./index.js";
-import { users, doctors, medicines, patients, appointments } from "./schema.js";
+import { users, doctors, medicines, patients, appointments, departments } from "./schema.js";
 import { eq } from "drizzle-orm";
+
 
 export const seedDatabase = async () => {
   console.log("🌱 Starting Database Seeding...");
@@ -235,8 +236,141 @@ export const seedDatabase = async () => {
   }
   console.log(`✅ Seeded ${seedPatients.length} patients`);
 
+  // 6. Seed Departments
+  const seedDepartments = [
+    {
+      id: "dept-1",
+      name: "Cardiology",
+      slug: "cardiology",
+      description: "Comprehensive cardiovascular diagnostics, interventional catheterization, ECG, and echocardiography.",
+      icon: "HeartPulse",
+      image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=500&q=80",
+      headOfDepartment: "Dr. Sarah Johnson",
+      floor: "3rd Floor",
+      roomNumber: "301",
+      contactEmail: "cardio@netrohospital.com",
+      contactPhone: "+1 (555) 234-5678",
+      doctorsCount: 8,
+      status: "Active",
+    },
+    {
+      id: "dept-2",
+      name: "Neurology & Neurosurgery",
+      slug: "neurology",
+      description: "Advanced neurological diagnostics, stroke unit, EEG, and peripheral nerve treatment.",
+      icon: "Brain",
+      image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=500&q=80",
+      headOfDepartment: "Dr. Michael Chen",
+      floor: "4th Floor",
+      roomNumber: "405",
+      contactEmail: "neuro@netrohospital.com",
+      contactPhone: "+1 (555) 345-6789",
+      doctorsCount: 6,
+      status: "Active",
+    },
+    {
+      id: "dept-3",
+      name: "Pediatrics & Neonatal Care",
+      slug: "pediatrics",
+      description: "Child wellness clinics, pediatric intensive care (NICU), immunizations, and developmental health.",
+      icon: "Baby",
+      image: "https://images.unsplash.com/photo-1594824813575-d227b94b05a7?w=500&q=80",
+      headOfDepartment: "Dr. Emily Taylor",
+      floor: "2nd Floor",
+      roomNumber: "202",
+      contactEmail: "pediatrics@netrohospital.com",
+      contactPhone: "+1 (555) 456-7890",
+      doctorsCount: 10,
+      status: "Active",
+    },
+    {
+      id: "dept-4",
+      name: "Orthopedics & Joint Surgery",
+      slug: "orthopedics",
+      description: "Bone trauma, total hip & knee replacements, sports arthroscopy, and spine stabilization.",
+      icon: "Bone",
+      image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=500&q=80",
+      headOfDepartment: "Dr. James Wilson",
+      floor: "1st Floor",
+      roomNumber: "108",
+      contactEmail: "ortho@netrohospital.com",
+      contactPhone: "+1 (555) 567-8901",
+      doctorsCount: 7,
+      status: "Active",
+    },
+    {
+      id: "dept-5",
+      name: "Dermatology & Cosmetology",
+      slug: "dermatology",
+      description: "Clinical skin therapy, laser cosmetology, allergy scratch tests, and surgical excision.",
+      icon: "Sparkles",
+      image: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=500&q=80",
+      headOfDepartment: "Dr. Ayesha Rahman",
+      floor: "2nd Floor",
+      roomNumber: "215",
+      contactEmail: "derma@netrohospital.com",
+      contactPhone: "+1 (555) 678-9012",
+      doctorsCount: 4,
+      status: "Active",
+    },
+    {
+      id: "dept-6",
+      name: "Diagnostic & Radiology",
+      slug: "radiology",
+      description: "High-field 3T MRI, 128-slice CT scan, digital X-Ray, color Doppler, and bone densitometry.",
+      icon: "Scan",
+      image: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=500&q=80",
+      headOfDepartment: "Dr. Tanvir Alam",
+      floor: "Ground Floor",
+      roomNumber: "G-12",
+      contactEmail: "radiology@netrohospital.com",
+      contactPhone: "+1 (555) 789-0123",
+      doctorsCount: 9,
+      status: "Active",
+    },
+    {
+      id: "dept-7",
+      name: "Emergency & Trauma Care",
+      slug: "emergency-care",
+      description: "24/7 immediate trauma triage, acute resuscitation, multi-bed critical ICU, and ambulance dispatch.",
+      icon: "Ambulance",
+      image: "https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=500&q=80",
+      headOfDepartment: "Dr. Robert Miller",
+      floor: "Ground Floor",
+      roomNumber: "ER-01",
+      contactEmail: "emergency@netrohospital.com",
+      contactPhone: "+1 (555) 999-0000",
+      doctorsCount: 14,
+      status: "Active",
+    },
+    {
+      id: "dept-8",
+      name: "Gynecology & Obstetrics",
+      slug: "gynecology",
+      description: "Women reproductive health, maternity delivery suites, fetal medicine, and laparoscopic surgery.",
+      icon: "HeartHandshake",
+      image: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=500&q=80",
+      headOfDepartment: "Dr. Samira Khan",
+      floor: "3rd Floor",
+      roomNumber: "310",
+      contactEmail: "gynae@netrohospital.com",
+      contactPhone: "+1 (555) 890-1234",
+      doctorsCount: 8,
+      status: "Active",
+    },
+  ];
+
+  for (const dept of seedDepartments) {
+    const existing = await db.select().from(departments).where(eq(departments.id, dept.id));
+    if (existing.length === 0) {
+      await db.insert(departments).values(dept);
+    }
+  }
+  console.log(`✅ Seeded ${seedDepartments.length} departments`);
+
   console.log("🎉 Database Seeding Completed Successfully!");
 };
+
 
 // If run directly via node
 if (process.argv[1]?.endsWith("seed.js")) {

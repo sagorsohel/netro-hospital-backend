@@ -4,6 +4,7 @@ import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
 export const verifyToken = async (req, res, next) => {
+
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -94,3 +95,6 @@ export const requireRoles = (...allowedRoles) => {
     next();
   };
 };
+
+export const authenticate = verifyToken;
+

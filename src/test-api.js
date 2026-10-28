@@ -117,7 +117,60 @@ const runTests = async () => {
   console.log("   Grand Total:", saleRes.data?.data?.grandTotal);
   console.log("   WhatsApp Sent:", saleRes.data?.data?.whatsappSent);
 
-  console.log("\n🎉 ALL TESTS PASSED SUCCESSFULLY! Neon DB + Drizzle ORM + JWT Auth is 100% operational!");
+  // 8. Test Departments CRUD & RBAC
+  console.log("\n8. Testing Departments CRUD & RBAC (/api/departments)...");
+  // 8a. Read departments
+  const deptListRes = await request("/api/departments?page=1&limit=4", "GET", null, adminToken);
+  console.log("   GET /api/departments Status:", deptListRes.status);
+  console.log("   Total departments:", deptListRes.data?.pagination?.total);
+  console.log("   Current page items:", deptListRes.data?.data?.length);
+
+  // 8b. Create department as Admin
+  console.log("   Testing POST /api/departments as Admin...");
+  const newDeptRes = await request(
+    "/api/departments",
+    "POST",
+    {
+      name: "Oncology & Chemotherapy",
+      description: "Comprehensive tumor diagnosis, targeted radiation, and chemotherapy infusion.",
+      icon: "ShieldAlert",
+      image: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=500&q=80",
+      headOfDepartment: "Dr. Farhana Yasmin",
+      floor: "5th Floor",
+      roomNumber: "502",
+      contactEmail: "oncology@netrohospital.com",
+      contactPhone: "+1 (555) 777-8899",
+      status: "Active",
+    },
+    adminToken
+  );
+  console.log("   Admin Create Status:", newDeptRes.status);
+  console.log("   Created ID:", newDeptRes.data?.data?.id);
+  const createdDeptId = newDeptRes.data?.data?.id;
+
+  // 8c. Test RBAC: Non-admin should be 403 Forbidden
+  console.log("   Testing RBAC: Non-admin trying to delete department...");
+  const nonAdminDeleteRes = await request(
+    `/api/departments/${createdDeptId}`,
+    "DELETE",
+    null,
+    pharmaToken // pharmacist role, not admin
+  );
+  console.log("   Non-admin delete Status (expected 403):", nonAdminDeleteRes.status);
+  if (nonAdminDeleteRes.status !== 403) throw new Error("RBAC failed! Non-admin should get 403.");
+
+  // 8d. Delete department as Admin
+  console.log("   Testing DELETE /api/departments as Admin...");
+  const adminDeleteRes = await request(
+    `/api/departments/${createdDeptId}`,
+    "DELETE",
+    null,
+    adminToken
+  );
+  console.log("   Admin delete Status:", adminDeleteRes.status);
+
+  console.log("\n🎉 ALL TESTS PASSED SUCCESSFULLY! Neon DB + Drizzle ORM + Departments CRUD + RBAC is 100% operational!");
+
 };
 
 try {

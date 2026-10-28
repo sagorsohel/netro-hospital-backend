@@ -1,66 +1,86 @@
-let appointments = [
-  {
-    id: "apt-101",
-    patientName: "John Doe",
-    patientId: "pat-1",
-    doctorName: "Dr. Sarah Johnson",
-    doctorId: "doc-1",
-    department: "Cardiology",
-    date: "2026-10-28",
-    time: "10:30 AM",
-    status: "Confirmed",
-    type: "In-Person",
-    fee: "$120"
-  },
-  {
-    id: "apt-102",
-    patientName: "Sarah Jenkins",
-    patientId: "pat-2",
-    doctorName: "Dr. Michael Chen",
-    doctorId: "doc-2",
-    department: "Neurology",
-    date: "2026-10-28",
-    time: "11:45 AM",
-    status: "Pending",
-    type: "Video Call",
-    fee: "$90"
-  },
-  {
-    id: "apt-103",
-    patientName: "Alice Miller",
-    patientId: "pat-4",
-    doctorName: "Dr. Emily Taylor",
-    doctorId: "doc-3",
-    department: "Pediatrics",
-    date: "2026-10-28",
-    time: "02:15 PM",
-    status: "Confirmed",
-    type: "In-Person",
-    fee: "$100"
-  }
-];
+import { db } from "../db/index.js";
+import { appointments } from "../db/schema.js";
+import { eq, desc } from "drizzle-orm";
 
-export const getAppointments = (req, res) => {
-  res.json({ success: true, count: appointments.length, data: appointments });
+export const getAppointments = async (req, res, next) => {
+  try {
+    const allAppointments = await db
+      .select()
+      .from(appointments)
+      .orderBy(desc(appointments.createdAt));
+    res.json({ success: true, count: allAppointments.length, data: allAppointments });
+  } catch (error) {
+    next(error);
+  }
 };
 
-export const createAppointment = (req, res) => {
-  const newAppointment = {
-    id: `apt-${Date.now()}`,
-    status: "Confirmed",
-    ...req.body
-  };
-  appointments.push(newAppointment);
-  res.status(201).json({ success: true, data: newAppointment });
+export const getAppointmentById = async (req, res, next) => {
+  try {
+    const [appointment] = await db
+      .select()
+      .from(appointments)
+      .where(eq(appointments.id, req.params.id));
+
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: "Appointment not found" });
+    }
+    res.json({ success: true, data: appointment });
+  } catch (error) {
+    next(error);
+  }
 };
 
-export const updateAppointmentStatus = (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  const appointment = appointments.find((a) => a.id === id);
-  if (!appointment) {
-    return res.status(404).json({ success: false, message: "Appointment not found" });
+export const createAppointment = async (req, res, next) => {
+  try {
+    const { patientName, doctorName, patientId, doctorId, date, time, type } = req.body;
+
+    if (!patientName || !doctorName || !date || !time) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient name, doctor name, date, and time are required.",
+      });
+    }
+
+    const newAppointment = {
+      id: `apt-${Date.now()}`,
+      patientId: patientId || null,
+      patientName,
+      doctorId: doctorId || null,
+      doctorName,
+      date,
+      time,
+      status: "Confirmed",
+      type: type || "Consultation",
+    };
+
+    await db.insert(appointments).values(newAppointment);
+    res.status(201).json({ success: true, data: newAppointment });
+  } catch (error) {
+    next(error);
   }
-  appointment.status = status || appointment.status;
-  res.json({ success: true, data: appointment });
+};
+
+export const updateAppointmentStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const { id } = req.params;
+
+    if (!status) {
+      return res.status(400).json({ success: false, message: "Status is required." });
+    }
+
+    const [updated] = await db
+      .update(appointments)
+      .set({ status })
+      .where(eq(appointments.id, id))
+      .returning();
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Appointment not found" });
+    }
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    next(error);
+  }
 };

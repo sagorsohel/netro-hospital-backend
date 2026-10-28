@@ -1,71 +1,72 @@
-let doctors = [
-  {
-    id: "doc-1",
-    name: "Dr. Sarah Johnson",
-    specialty: "Cardiology",
-    experience: "12 years",
-    rating: 4.9,
-    availability: "Available Today",
-    phone: "+1 (555) 234-5678",
-    email: "sarah.johnson@netrohospital.com",
-    department: "Cardiology",
-    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&q=80"
-  },
-  {
-    id: "doc-2",
-    name: "Dr. Michael Chen",
-    specialty: "Neurology",
-    experience: "15 years",
-    rating: 4.8,
-    availability: "Available Tomorrow",
-    phone: "+1 (555) 345-6789",
-    email: "michael.chen@netrohospital.com",
-    department: "Neurology",
-    image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&q=80"
-  },
-  {
-    id: "doc-3",
-    name: "Dr. Emily Taylor",
-    specialty: "Pediatrics",
-    experience: "8 years",
-    rating: 4.95,
-    availability: "Available Today",
-    phone: "+1 (555) 456-7890",
-    email: "emily.taylor@netrohospital.com",
-    department: "Pediatrics",
-    image: "https://images.unsplash.com/photo-1594824813575-d227b94b05a7?w=300&q=80"
-  },
-  {
-    id: "doc-4",
-    name: "Dr. James Wilson",
-    specialty: "Orthopedics",
-    experience: "10 years",
-    rating: 4.7,
-    availability: "Next Mon",
-    phone: "+1 (555) 567-8901",
-    email: "james.wilson@netrohospital.com",
-    department: "Orthopedics",
-    image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=300&q=80"
-  }
-];
+import { db } from "../db/index.js";
+import { doctors } from "../db/schema.js";
+import { eq, desc } from "drizzle-orm";
 
-export const getDoctors = (req, res) => {
-  res.json({ success: true, count: doctors.length, data: doctors });
+export const getDoctors = async (req, res, next) => {
+  try {
+    const allDoctors = await db
+      .select()
+      .from(doctors)
+      .orderBy(desc(doctors.createdAt));
+    res.json({ success: true, count: allDoctors.length, data: allDoctors });
+  } catch (error) {
+    next(error);
+  }
 };
 
-export const getDoctorById = (req, res) => {
-  const doctor = doctors.find((d) => d.id === req.params.id);
-  if (!doctor) {
-    return res.status(404).json({ success: false, message: "Doctor not found" });
+export const getDoctorById = async (req, res, next) => {
+  try {
+    const [doctor] = await db
+      .select()
+      .from(doctors)
+      .where(eq(doctors.id, req.params.id));
+
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: "Doctor not found" });
+    }
+    res.json({ success: true, data: doctor });
+  } catch (error) {
+    next(error);
   }
-  res.json({ success: true, data: doctor });
 };
 
-export const createDoctor = (req, res) => {
-  const newDoctor = {
-    id: `doc-${Date.now()}`,
-    ...req.body
-  };
-  doctors.push(newDoctor);
-  res.status(201).json({ success: true, data: newDoctor });
+export const createDoctor = async (req, res, next) => {
+  try {
+    const {
+      name,
+      specialty,
+      experience,
+      rating = "4.8",
+      availability = "Available Today",
+      phone,
+      email,
+      department,
+      image,
+    } = req.body;
+
+    if (!name || !specialty) {
+      return res.status(400).json({
+        success: false,
+        message: "Doctor name and specialty are required.",
+      });
+    }
+
+    const newDoctor = {
+      id: `doc-${Date.now()}`,
+      name,
+      specialty,
+      experience: experience || "5 years",
+      rating: rating.toString(),
+      availability,
+      phone: phone || null,
+      email: email || null,
+      department: department || specialty,
+      image: image || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&q=80",
+    };
+
+    await db.insert(doctors).values(newDoctor);
+    res.status(201).json({ success: true, data: newDoctor });
+  } catch (error) {
+    next(error);
+  }
 };

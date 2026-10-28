@@ -1,59 +1,61 @@
-let patients = [
-  {
-    id: "pat-1",
-    name: "John Doe",
-    age: 38,
-    gender: "Male",
-    bloodGroup: "O+",
-    phone: "+1 (555) 789-0123",
-    email: "john.doe@example.com",
-    lastVisit: "2026-10-24",
-    status: "Active",
-    condition: "Hypertension Checkup"
-  },
-  {
-    id: "pat-2",
-    name: "Sarah Jenkins",
-    age: 29,
-    gender: "Female",
-    bloodGroup: "A+",
-    phone: "+1 (555) 890-1234",
-    email: "sarah.j@example.com",
-    lastVisit: "2026-10-26",
-    status: "Active",
-    condition: "Post-op Followup"
-  },
-  {
-    id: "pat-3",
-    name: "Robert Davis",
-    age: 54,
-    gender: "Male",
-    bloodGroup: "B-",
-    phone: "+1 (555) 901-2345",
-    email: "rdavis@example.com",
-    lastVisit: "2026-10-20",
-    status: "Discharged",
-    condition: "Cardiac Rehab"
-  }
-];
+import { db } from "../db/index.js";
+import { patients } from "../db/schema.js";
+import { eq, desc } from "drizzle-orm";
 
-export const getPatients = (req, res) => {
-  res.json({ success: true, count: patients.length, data: patients });
+export const getPatients = async (req, res, next) => {
+  try {
+    const allPatients = await db
+      .select()
+      .from(patients)
+      .orderBy(desc(patients.createdAt));
+    res.json({ success: true, count: allPatients.length, data: allPatients });
+  } catch (error) {
+    next(error);
+  }
 };
 
-export const getPatientById = (req, res) => {
-  const patient = patients.find((p) => p.id === req.params.id);
-  if (!patient) {
-    return res.status(404).json({ success: false, message: "Patient not found" });
+export const getPatientById = async (req, res, next) => {
+  try {
+    const [patient] = await db
+      .select()
+      .from(patients)
+      .where(eq(patients.id, req.params.id));
+
+    if (!patient) {
+      return res.status(404).json({ success: false, message: "Patient not found" });
+    }
+    res.json({ success: true, data: patient });
+  } catch (error) {
+    next(error);
   }
-  res.json({ success: true, data: patient });
 };
 
-export const createPatient = (req, res) => {
-  const newPatient = {
-    id: `pat-${Date.now()}`,
-    ...req.body
-  };
-  patients.push(newPatient);
-  res.status(201).json({ success: true, data: newPatient });
+export const createPatient = async (req, res, next) => {
+  try {
+    const { name, age, gender, phone, email, bloodGroup, address, memberId } = req.body;
+
+    if (!name || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient name and phone are required.",
+      });
+    }
+
+    const newPatient = {
+      id: `pat-${Date.now()}`,
+      name,
+      age: age ? Number(age) : null,
+      gender: gender || "Other",
+      phone,
+      email: email || null,
+      bloodGroup: bloodGroup || null,
+      address: address || null,
+      memberId: memberId || null,
+    };
+
+    await db.insert(patients).values(newPatient);
+    res.status(201).json({ success: true, data: newPatient });
+  } catch (error) {
+    next(error);
+  }
 };

@@ -1,0 +1,609 @@
+{
+  "info": {
+    "_postman_id": "netro-hospital-api-collection-v1",
+    "name": "Netro Hospital & Pharmacy Management API",
+    "description": "Complete REST API collection for Netro Hospital Management System (HMS), Pharmacy POS, and Mobile App with Neon PostgreSQL, Drizzle ORM, and JWT Authentication.\n\n### Default Credentials:\n- **Hospital Admin**: `admin@netro.com` / `12345678`\n- **Pharmacy POS**: `pharmarcy@netro.com` / `12345678` (or `pharmacy@netro.com`)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pharmaToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Authentication",
+      "description": "User login, registration, JWT generation, and profile management.",
+      "item": [
+        {
+          "name": "Login - Hospital Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) {",
+                  "    pm.collectionVariables.set('token', res.token);",
+                  "    pm.collectionVariables.set('adminToken', res.token);",
+                  "    console.log('Admin JWT Token saved to collection variable!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@netro.com\",\n  \"password\": \"12345678\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Authenticates as Hospital Admin and automatically stores the JWT token."
+          }
+        },
+        {
+          "name": "Login - Pharmacy POS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) {",
+                  "    pm.collectionVariables.set('token', res.token);",
+                  "    pm.collectionVariables.set('pharmaToken', res.token);",
+                  "    console.log('Pharmacy JWT Token saved to collection variable!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pharmarcy@netro.com\",\n  \"password\": \"12345678\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Authenticates as Pharmacist and automatically stores the JWT token."
+          }
+        },
+        {
+          "name": "Register New Staff",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dr. Masud Rana\",\n  \"email\": \"masud.rana@netrohospital.com\",\n  \"password\": \"12345678\",\n  \"role\": \"doctor\",\n  \"branchName\": \"Dhanmondi Branch\",\n  \"phone\": \"+8801700998877\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Registers a new doctor, nurse, or staff member in the database."
+          }
+        },
+        {
+          "name": "Get Authenticated User Profile (Me)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Fetches current user profile from Neon DB using the Bearer JWT."
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"12345678\",\n  \"newPassword\": \"87654321\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "change-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Core Hospital (HMS)",
+      "description": "Doctors, patients, serial appointments, and queue management.",
+      "item": [
+        {
+          "name": "Get All Doctors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors"]
+            }
+          }
+        },
+        {
+          "name": "Get Doctor By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/doc-1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "doc-1"]
+            }
+          }
+        },
+        {
+          "name": "Create New Doctor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dr. Ariful Islam\",\n  \"specialty\": \"Gastroenterology\",\n  \"experience\": \"14 years\",\n  \"rating\": 4.9,\n  \"availability\": \"Available Today\",\n  \"phone\": \"+8801811223344\",\n  \"email\": \"ariful.islam@netrohospital.com\",\n  \"department\": \"Gastroenterology\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors"]
+            }
+          }
+        },
+        {
+          "name": "Get All Patients",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/patients",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "patients"]
+            }
+          }
+        },
+        {
+          "name": "Register New Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kazi Faruk\",\n  \"age\": 38,\n  \"gender\": \"Male\",\n  \"phone\": \"+8801912349988\",\n  \"email\": \"kazi.faruk@gmail.com\",\n  \"bloodGroup\": \"A+\",\n  \"address\": \"Uttara Sector-4, Dhaka\",\n  \"memberId\": \"MEM-992\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/patients",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "patients"]
+            }
+          }
+        },
+        {
+          "name": "Get All Appointments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments"]
+            }
+          }
+        },
+        {
+          "name": "Create Appointment (Doctor Serial)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientName\": \"Kazi Faruk\",\n  \"doctorName\": \"Dr. Sarah Johnson\",\n  \"doctorId\": \"doc-1\",\n  \"date\": \"2026-10-30\",\n  \"time\": \"10:30 AM\",\n  \"type\": \"Cardiology Consultation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments"]
+            }
+          }
+        },
+        {
+          "name": "Update Appointment Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Completed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments/apt-1/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments", "apt-1", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Pharmacy Management & POS",
+      "description": "Multi-unit inventory (Carton ➔ Strip ➔ Piece), FEFO expiry alerts, and WhatsApp POS counter sales.",
+      "item": [
+        {
+          "name": "Get All Medicines (Live Inventory)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pharmacy/medicines",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pharmacy", "medicines"]
+            }
+          }
+        },
+        {
+          "name": "Filter Low-Stock Medicines",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pharmacy/medicines?filter=low-stock",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pharmacy", "medicines"],
+              "query": [
+                {
+                  "key": "filter",
+                  "value": "low-stock"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter Near-Expiry Medicines (FEFO Alert)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pharmacy/medicines?filter=near-expiry",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pharmacy", "medicines"],
+              "query": [
+                {
+                  "key": "filter",
+                  "value": "near-expiry"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Medicine (Name / Generic / Batch)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pharmacy/medicines?search=napa",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pharmacy", "medicines"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "napa"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "New Medicine Stock-In (Multi-Unit)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Azithromycin 500mg\",\n  \"generic\": \"Azithromycin Di-hydrate\",\n  \"category\": \"Antibiotic\",\n  \"cartonQty\": 10,\n  \"packetPerCarton\": 10,\n  \"piecePerPacket\": 6,\n  \"unitSellingPrice\": 35.00,\n  \"stripSellingPrice\": 210.00,\n  \"batchNo\": \"BATCH-AZ881\",\n  \"expiryDate\": \"2027-12-31\",\n  \"supplier\": \"Beximco Pharmaceuticals\",\n  \"branch\": \"Main Hospital Pharmacy\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pharmacy/medicines/stock-in",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pharmacy", "medicines", "stock-in"]
+            },
+            "description": "Calculates carton x packet x piece = 600 pieces automatically and updates Neon DB."
+          }
+        },
+        {
+          "name": "Get Recent POS Sales Invoices",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pharmacy/invoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pharmacy", "invoices"]
+            }
+          }
+        },
+        {
+          "name": "Create POS Sale & Auto-Deduct Stock",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Mr. Mahmudul Hasan\",\n  \"phone\": \"+8801711223344\",\n  \"memberId\": \"MEM-881\",\n  \"isMember\": true,\n  \"hasPrescription\": true,\n  \"items\": [\n    {\n      \"medicineId\": \"med-1\",\n      \"name\": \"Napa Extra 500mg\",\n      \"unitType\": \"strip\",\n      \"quantity\": 2,\n      \"unitPrice\": 35,\n      \"totalPrice\": 70\n    },\n    {\n      \"medicineId\": \"med-2\",\n      \"name\": \"Seclo 20mg Capsule\",\n      \"unitType\": \"strip\",\n      \"quantity\": 1,\n      \"unitPrice\": 60,\n      \"totalPrice\": 60\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pharmacy/invoices",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pharmacy", "invoices"]
+            },
+            "description": "Calculates 10% member discount, records the sale, sends simulated WhatsApp PDF invoice, and automatically deducts stock pieces from Neon DB."
+          }
+        },
+        {
+          "name": "Trigger WhatsApp / SMS Delivery",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"whatsapp\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/pharmacy/invoices/inv-1/deliver",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pharmacy", "invoices", "inv-1", "deliver"]
+            }
+          }
+        },
+        {
+          "name": "Get Pharmacy Analytics & KPI Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/pharmacy/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "pharmacy", "stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. System & Health",
+      "description": "Server diagnostics, database ping, and API discovery.",
+      "item": [
+        {
+          "name": "Server Overview & Documentation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            }
+          }
+        },
+        {
+          "name": "Health Check Endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

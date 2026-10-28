@@ -6,7 +6,11 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "node src/db/seed.js",
+    "test:api": "node src/test-api.js"
   },
   "keywords": [
     "express",
@@ -18,12 +22,18 @@
   "author": "sagorsohel",
   "license": "ISC",
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.45.4",
     "express": "^4.21.2",
-    "morgan": "^1.10.0"
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.10.0",
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
+    "drizzle-kit": "^0.31.11",
     "nodemon": "^3.1.9"
   }
 }

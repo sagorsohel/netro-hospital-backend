@@ -117,6 +117,7 @@ export const createStaff = async (req, res, next) => {
       bloodGroup,
       emergencyContact,
       qualification,
+      documents,
       status,
     } = req.body;
 
@@ -125,6 +126,19 @@ export const createStaff = async (req, res, next) => {
         success: false,
         message: "Name, designation, department, and phone are required.",
       });
+    }
+
+    let parsedDocuments = [];
+    if (documents) {
+      if (Array.isArray(documents)) {
+        parsedDocuments = documents;
+      } else if (typeof documents === "string") {
+        try {
+          parsedDocuments = JSON.parse(documents);
+        } catch {
+          parsedDocuments = [];
+        }
+      }
     }
 
     const id = `staff_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
@@ -146,6 +160,7 @@ export const createStaff = async (req, res, next) => {
         bloodGroup: bloodGroup || undefined,
         emergencyContact: emergencyContact || undefined,
         qualification: qualification ? qualification.trim() : undefined,
+        documents: parsedDocuments,
         status: status || "Active",
       })
       .returning();
@@ -179,6 +194,18 @@ export const updateStaff = async (req, res, next) => {
 
     if (updateData.salary) {
       updateData.salary = String(updateData.salary);
+    }
+
+    if (updateData.documents !== undefined) {
+      if (typeof updateData.documents === "string") {
+        try {
+          updateData.documents = JSON.parse(updateData.documents);
+        } catch {
+          updateData.documents = [];
+        }
+      } else if (!Array.isArray(updateData.documents)) {
+        updateData.documents = [];
+      }
     }
 
     const [updated] = await db

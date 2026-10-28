@@ -13,10 +13,17 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    if (
+      file.mimetype.startsWith('image/') ||
+      file.mimetype === 'application/pdf' ||
+      file.mimetype.includes('document') ||
+      file.mimetype.includes('word') ||
+      file.mimetype.includes('sheet') ||
+      file.mimetype.includes('text')
+    ) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      cb(new Error('Only image, PDF, and document files are allowed'), false);
     }
   },
 });
@@ -59,7 +66,10 @@ router.post(
       return res.status(200).json({
         success: true,
         url,
-        message: 'Image uploaded to Cloudinary successfully.',
+        name: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        message: 'File uploaded to Cloudinary successfully.',
       });
     } catch (uploadError) {
       // If Cloudinary env vars missing, fallback gracefully to a mock data url or error

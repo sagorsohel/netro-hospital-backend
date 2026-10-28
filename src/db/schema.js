@@ -173,6 +173,7 @@ export const staff = pgTable("staff", {
   bloodGroup: varchar("blood_group", { length: 10 }),
   emergencyContact: varchar("emergency_contact", { length: 50 }),
   qualification: varchar("qualification", { length: 255 }),
+  documents: jsonb("documents").default([]),
   status: varchar("status", { length: 50 }).default("Active"), // 'Active', 'On Leave', 'Resigned'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

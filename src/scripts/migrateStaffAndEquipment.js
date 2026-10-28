@@ -19,6 +19,7 @@ async function migrateAndSeed() {
         email VARCHAR(255),
         address VARCHAR(500),
         photo VARCHAR(500),
+        documents JSONB DEFAULT '[]'::jsonb,
         joining_date VARCHAR(50),
         salary NUMERIC(12, 2) DEFAULT 25000.00,
         blood_group VARCHAR(10),
@@ -29,7 +30,8 @@ async function migrateAndSeed() {
         updated_at TIMESTAMP DEFAULT NOW()
       );
     `);
-    console.log('✅ staff table ready.');
+    await db.execute(sql`ALTER TABLE staff ADD COLUMN IF NOT EXISTS documents JSONB DEFAULT '[]'::jsonb;`);
+    console.log('✅ staff table ready with documents column.');
 
     // 2. Create duty_rosters table
     await db.execute(sql`

@@ -26,15 +26,29 @@ const upload = multer({
  * @desc    Upload department image/icon to Cloudinary
  * @access  Private
  */
-router.post('/image', verifyToken, upload.single('file'), async (req, res, next) => {
-
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'No image file uploaded. Please provide a "file" field.',
-      });
-    }
+router.post(
+  '/image',
+  verifyToken,
+  (req, res, next) => {
+    upload.fields([
+      { name: 'file', maxCount: 1 },
+      { name: 'image', maxCount: 1 },
+    ])(req, res, (err) => {
+      if (err) return next(err);
+      if (req.files) {
+        req.file = req.files['file']?.[0] || req.files['image']?.[0];
+      }
+      next();
+    });
+  },
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No image file uploaded. Please provide a "file" or "image" field.',
+        });
+      }
 
     const folder = req.body.folder || 'netro-hospital/departments';
     const filename = req.file.originalname || `upload_${Date.now()}`;

@@ -27,14 +27,21 @@ export const uploadBufferToCloudinary = (fileBuffer, folder = 'netro-hospital/de
       );
     }
 
+    const sanitizedFilename = filename
+      ? `${filename.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_')}_${Date.now()}`
+      : `upload_${Date.now()}`;
+
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
-        public_id: filename ? filename.replace(/\.[^/.]+$/, '') : undefined,
+        public_id: sanitizedFilename,
         resource_type: 'auto',
       },
       (error, result) => {
-        if (error) return reject(error);
+        if (error) {
+          console.error('Cloudinary stream error:', error);
+          return reject(error);
+        }
         resolve(result?.secure_url || result?.url);
       }
     );

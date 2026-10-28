@@ -5,10 +5,6 @@ import dotenv from "dotenv";
 
 import authRoutes from "./routes/auth.routes.js";
 import healthRoutes from "./routes/health.routes.js";
-import doctorRoutes from "./routes/doctor.routes.js";
-import patientRoutes from "./routes/patient.routes.js";
-import appointmentRoutes from "./routes/appointment.routes.js";
-import pharmacyRoutes from "./routes/pharmacy.routes.js";
 import departmentRoutes from "./routes/department.routes.js";
 import uploadRoutes from "./routes/upload.routes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
@@ -16,18 +12,19 @@ import { db } from "./db/index.js";
 import { users } from "./db/schema.js";
 import { seedDatabase } from "./db/seed.js";
 
-
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -38,7 +35,7 @@ if (process.env.NODE_ENV !== "test") {
 // Root route
 app.get("/", (req, res) => {
   res.json({
-    message: "🏥 Welcome to Netro Hospital & Pharmacy Management API",
+    message: "🏥 Welcome to Netro Hospital Management API",
     version: "1.0.0",
     database: "Neon PostgreSQL with Drizzle ORM",
     auth: {
@@ -47,35 +44,22 @@ app.get("/", (req, res) => {
       me: "GET /api/auth/me",
       defaultCredentials: [
         { role: "admin", email: "admin@netro.com", password: "••••••••" },
-        { role: "pharmacist", email: "pharmarcy@netro.com", password: "••••••••" },
       ],
     },
     modules: {
       health: "/api/health",
       auth: "/api/auth",
-      doctors: "/api/doctors",
-      patients: "/api/patients",
-      appointments: "/api/appointments",
-      pharmacy: {
-        medicines: "/api/pharmacy/medicines",
-        stockIn: "POST /api/pharmacy/medicines/stock-in",
-        invoices: "/api/pharmacy/invoices",
-        stats: "/api/pharmacy/stats",
-      },
+      departments: "/api/departments",
+      upload: "POST /api/upload/image",
     },
   });
 });
 
-// Mount Routes
+// Mount Core Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/health", healthRoutes);
-app.use("/api/doctors", doctorRoutes);
-app.use("/api/patients", patientRoutes);
-app.use("/api/appointments", appointmentRoutes);
-app.use("/api/pharmacy", pharmacyRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/upload", uploadRoutes);
-
 
 // Error Handling
 app.use(notFound);

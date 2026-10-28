@@ -1,6 +1,6 @@
 import { db } from "../db/index.js";
 import { departments } from "../db/schema.js";
-import { eq, ilike, or, desc, sql } from "drizzle-orm";
+import { eq, ilike, or, and, desc, sql } from "drizzle-orm";
 
 /**
  * @desc Get all departments with pagination and search
@@ -10,7 +10,7 @@ import { eq, ilike, or, desc, sql } from "drizzle-orm";
 export const getDepartments = async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.max(1, Math.min(50, parseInt(req.query.limit) || 8));
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 8));
     const offset = (page - 1) * limit;
     const search = req.query.search ? req.query.search.trim() : "";
     const status = req.query.status ? req.query.status.trim() : "";
@@ -29,7 +29,12 @@ export const getDepartments = async (req, res, next) => {
       conditions.push(eq(departments.status, status));
     }
 
-    const whereClause = conditions.length > 0 ? conditions[0] : undefined;
+    const whereClause =
+      conditions.length === 1
+        ? conditions[0]
+        : conditions.length > 1
+        ? and(...conditions)
+        : undefined;
 
     // Get total count
     const [countResult] = await db

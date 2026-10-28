@@ -10,7 +10,7 @@ import { eq, ilike, or, and, desc, sql } from "drizzle-orm";
 export const getDoctors = async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.max(1, Math.min(50, parseInt(req.query.limit) || 10));
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 10));
     const offset = (page - 1) * limit;
     const search = req.query.search ? req.query.search.trim() : "";
     const departmentId = req.query.departmentId ? req.query.departmentId.trim() : "";

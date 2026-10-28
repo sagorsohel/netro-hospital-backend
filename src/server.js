@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import departmentRoutes from "./routes/department.routes.js";
+import doctorRoutes from "./routes/doctor.routes.js";
 import uploadRoutes from "./routes/upload.routes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import { db } from "./db/index.js";
@@ -59,6 +60,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/health", healthRoutes);
 app.use("/api/departments", departmentRoutes);
+app.use("/api/doctors", doctorRoutes);
 app.use("/api/upload", uploadRoutes);
 
 // Error Handling

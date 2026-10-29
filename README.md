@@ -33,13 +33,13 @@ Express.js and Node.js REST API server for **Netro Hospital Management System** 
 ## API Endpoints
 
 - `GET /` - Root status & docs
-- `GET /api/health` - Service health status
-- `GET /api/doctors` - Get all doctors
-- `GET /api/doctors/:id` - Get doctor details
-- `POST /api/doctors` - Add new doctor
-- `GET /api/patients` - List all patients
-- `GET /api/patients/:id` - Get patient details
-- `POST /api/patients` - Register patient
-- `GET /api/appointments` - List appointments
-- `POST /api/appointments` - Book appointment
-- `PATCH /api/appointments/:id/status` - Update appointment status
+- `GET /api/v1/health` - Service health status
+- `GET /api/v1/doctors` - Get all doctors
+- `GET /api/v1/doctors/:id` - Get doctor details
+- `POST /api/v1/doctors` - Add new doctor
+- `GET /api/v1/patients` - List all patients
+- `GET /api/v1/patients/:id` - Get patient details
+- `POST /api/v1/patients` - Register patient
+- `GET /api/v1/appointments` - List appointments
+- `POST /api/v1/appointments` - Book appointment
+- `PATCH /api/v1/appointments/:id/status` - Update appointment status

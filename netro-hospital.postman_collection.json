@@ -63,9 +63,9 @@
               "raw": "{\n  \"email\": \"admin@netro.com\",\n  \"password\": \"12345678\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
+              "raw": "{{baseUrl}}/api/v1/auth/login",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "path": ["api", "v1", "auth", "login"]
             },
             "description": "Authenticates as Hospital Admin and automatically stores the JWT token."
           }
@@ -101,9 +101,9 @@
               "raw": "{\n  \"email\": \"pharmarcy@netro.com\",\n  \"password\": \"12345678\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
+              "raw": "{{baseUrl}}/api/v1/auth/login",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "path": ["api", "v1", "auth", "login"]
             },
             "description": "Authenticates as Pharmacist and automatically stores the JWT token."
           }
@@ -123,9 +123,9 @@
               "raw": "{\n  \"name\": \"Dr. Masud Rana\",\n  \"email\": \"masud.rana@netrohospital.com\",\n  \"password\": \"12345678\",\n  \"role\": \"doctor\",\n  \"branchName\": \"Dhanmondi Branch\",\n  \"phone\": \"+8801700998877\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/register",
+              "raw": "{{baseUrl}}/api/v1/auth/register",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
+              "path": ["api", "v1", "auth", "register"]
             },
             "description": "Registers a new doctor, nurse, or staff member in the database."
           }
@@ -146,9 +146,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/me",
+              "raw": "{{baseUrl}}/api/v1/auth/me",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "me"]
+              "path": ["api", "v1", "auth", "me"]
             },
             "description": "Fetches current user profile from Neon DB using the Bearer JWT."
           }
@@ -178,9 +178,9 @@
               "raw": "{\n  \"currentPassword\": \"12345678\",\n  \"newPassword\": \"87654321\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/change-password",
+              "raw": "{{baseUrl}}/api/v1/auth/change-password",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "change-password"]
+              "path": ["api", "v1", "auth", "change-password"]
             }
           }
         }
@@ -196,9 +196,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/doctors",
+              "raw": "{{baseUrl}}/api/v1/doctors",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors"]
+              "path": ["api", "v1", "doctors"]
             }
           }
         },
@@ -208,9 +208,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/doctors/doc-1",
+              "raw": "{{baseUrl}}/api/v1/doctors/doc-1",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "doc-1"]
+              "path": ["api", "v1", "doctors", "doc-1"]
             }
           }
         },
@@ -229,9 +229,9 @@
               "raw": "{\n  \"name\": \"Dr. Ariful Islam\",\n  \"specialty\": \"Gastroenterology\",\n  \"experience\": \"14 years\",\n  \"rating\": 4.9,\n  \"availability\": \"Available Today\",\n  \"phone\": \"+8801811223344\",\n  \"email\": \"ariful.islam@netrohospital.com\",\n  \"department\": \"Gastroenterology\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/doctors",
+              "raw": "{{baseUrl}}/api/v1/doctors",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors"]
+              "path": ["api", "v1", "doctors"]
             }
           }
         },
@@ -241,9 +241,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/patients",
+              "raw": "{{baseUrl}}/api/v1/patients",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "patients"]
+              "path": ["api", "v1", "patients"]
             }
           }
         },
@@ -262,9 +262,9 @@
               "raw": "{\n  \"name\": \"Kazi Faruk\",\n  \"age\": 38,\n  \"gender\": \"Male\",\n  \"phone\": \"+8801912349988\",\n  \"email\": \"kazi.faruk@gmail.com\",\n  \"bloodGroup\": \"A+\",\n  \"address\": \"Uttara Sector-4, Dhaka\",\n  \"memberId\": \"MEM-992\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/patients",
+              "raw": "{{baseUrl}}/api/v1/patients",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "patients"]
+              "path": ["api", "v1", "patients"]
             }
           }
         },
@@ -274,9 +274,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/appointments",
+              "raw": "{{baseUrl}}/api/v1/appointments",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "appointments"]
+              "path": ["api", "v1", "appointments"]
             }
           }
         },
@@ -295,9 +295,9 @@
               "raw": "{\n  \"patientName\": \"Kazi Faruk\",\n  \"doctorName\": \"Dr. Sarah Johnson\",\n  \"doctorId\": \"doc-1\",\n  \"date\": \"2026-10-30\",\n  \"time\": \"10:30 AM\",\n  \"type\": \"Cardiology Consultation\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/appointments",
+              "raw": "{{baseUrl}}/api/v1/appointments",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "appointments"]
+              "path": ["api", "v1", "appointments"]
             }
           }
         },
@@ -316,9 +316,9 @@
               "raw": "{\n  \"status\": \"Completed\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/appointments/apt-1/status",
+              "raw": "{{baseUrl}}/api/v1/appointments/apt-1/status",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "appointments", "apt-1", "status"]
+              "path": ["api", "v1", "appointments", "apt-1", "status"]
             }
           }
         }
@@ -344,9 +344,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/pharmacy/medicines",
+              "raw": "{{baseUrl}}/api/v1/pharmacy/medicines",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "pharmacy", "medicines"]
+              "path": ["api", "v1", "pharmacy", "medicines"]
             }
           }
         },
@@ -366,9 +366,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/pharmacy/medicines?filter=low-stock",
+              "raw": "{{baseUrl}}/api/v1/pharmacy/medicines?filter=low-stock",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "pharmacy", "medicines"],
+              "path": ["api", "v1", "pharmacy", "medicines"],
               "query": [
                 {
                   "key": "filter",
@@ -394,9 +394,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/pharmacy/medicines?filter=near-expiry",
+              "raw": "{{baseUrl}}/api/v1/pharmacy/medicines?filter=near-expiry",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "pharmacy", "medicines"],
+              "path": ["api", "v1", "pharmacy", "medicines"],
               "query": [
                 {
                   "key": "filter",
@@ -422,9 +422,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/pharmacy/medicines?search=napa",
+              "raw": "{{baseUrl}}/api/v1/pharmacy/medicines?search=napa",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "pharmacy", "medicines"],
+              "path": ["api", "v1", "pharmacy", "medicines"],
               "query": [
                 {
                   "key": "search",
@@ -459,9 +459,9 @@
               "raw": "{\n  \"name\": \"Azithromycin 500mg\",\n  \"generic\": \"Azithromycin Di-hydrate\",\n  \"category\": \"Antibiotic\",\n  \"cartonQty\": 10,\n  \"packetPerCarton\": 10,\n  \"piecePerPacket\": 6,\n  \"unitSellingPrice\": 35.00,\n  \"stripSellingPrice\": 210.00,\n  \"batchNo\": \"BATCH-AZ881\",\n  \"expiryDate\": \"2027-12-31\",\n  \"supplier\": \"Beximco Pharmaceuticals\",\n  \"branch\": \"Main Hospital Pharmacy\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/pharmacy/medicines/stock-in",
+              "raw": "{{baseUrl}}/api/v1/pharmacy/medicines/stock-in",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "pharmacy", "medicines", "stock-in"]
+              "path": ["api", "v1", "pharmacy", "medicines", "stock-in"]
             },
             "description": "Calculates carton x packet x piece = 600 pieces automatically and updates Neon DB."
           }
@@ -482,9 +482,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/pharmacy/invoices",
+              "raw": "{{baseUrl}}/api/v1/pharmacy/invoices",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "pharmacy", "invoices"]
+              "path": ["api", "v1", "pharmacy", "invoices"]
             }
           }
         },
@@ -513,9 +513,9 @@
               "raw": "{\n  \"customerName\": \"Mr. Mahmudul Hasan\",\n  \"phone\": \"+8801711223344\",\n  \"memberId\": \"MEM-881\",\n  \"isMember\": true,\n  \"hasPrescription\": true,\n  \"items\": [\n    {\n      \"medicineId\": \"med-1\",\n      \"name\": \"Napa Extra 500mg\",\n      \"unitType\": \"strip\",\n      \"quantity\": 2,\n      \"unitPrice\": 35,\n      \"totalPrice\": 70\n    },\n    {\n      \"medicineId\": \"med-2\",\n      \"name\": \"Seclo 20mg Capsule\",\n      \"unitType\": \"strip\",\n      \"quantity\": 1,\n      \"unitPrice\": 60,\n      \"totalPrice\": 60\n    }\n  ]\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/pharmacy/invoices",
+              "raw": "{{baseUrl}}/api/v1/pharmacy/invoices",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "pharmacy", "invoices"]
+              "path": ["api", "v1", "pharmacy", "invoices"]
             },
             "description": "Calculates 10% member discount, records the sale, sends simulated WhatsApp PDF invoice, and automatically deducts stock pieces from Neon DB."
           }
@@ -545,9 +545,9 @@
               "raw": "{\n  \"type\": \"whatsapp\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/pharmacy/invoices/inv-1/deliver",
+              "raw": "{{baseUrl}}/api/v1/pharmacy/invoices/inv-1/deliver",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "pharmacy", "invoices", "inv-1", "deliver"]
+              "path": ["api", "v1", "pharmacy", "invoices", "inv-1", "deliver"]
             }
           }
         },
@@ -567,9 +567,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/pharmacy/stats",
+              "raw": "{{baseUrl}}/api/v1/pharmacy/stats",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "pharmacy", "stats"]
+              "path": ["api", "v1", "pharmacy", "stats"]
             }
           }
         }
@@ -597,9 +597,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/health",
+              "raw": "{{baseUrl}}/api/v1/health",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "health"]
+              "path": ["api", "v1", "health"]
             }
           }
         }

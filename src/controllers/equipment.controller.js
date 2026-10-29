@@ -1,6 +1,9 @@
 import { db } from "../db/index.js";
 import { equipment, maintenanceLogs } from "../db/schema.js";
-import { eq, ilike, or, and, desc, sql } from "drizzle-orm";
+import { eq, ilike, or, desc, sql } from "drizzle-orm";
+import { getPagination, buildPaginationMeta } from "../utils/pagination.js";
+import { combineConditions, getQueryString } from "../utils/query.js";
+import { generateId } from "../utils/generateId.js";
 
 // ==========================================
 // 1. EQUIPMENT INVENTORY & STATUS
@@ -8,13 +11,11 @@ import { eq, ilike, or, and, desc, sql } from "drizzle-orm";
 
 export const getEquipment = async (req, res, next) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 10));
-    const offset = (page - 1) * limit;
-    const search = req.query.search ? req.query.search.trim() : "";
-    const category = req.query.category ? req.query.category.trim() : "";
-    const status = req.query.status ? req.query.status.trim() : "";
-    const department = req.query.department ? req.query.department.trim() : "";
+    const { page, limit, offset } = getPagination(req.query, 10);
+    const search = getQueryString(req.query, "search");
+    const category = getQueryString(req.query, "category");
+    const status = getQueryString(req.query, "status");
+    const department = getQueryString(req.query, "department");
 
     const conditions = [];
 
@@ -42,20 +43,12 @@ export const getEquipment = async (req, res, next) => {
       conditions.push(ilike(equipment.department, department));
     }
 
-    const whereClause =
-      conditions.length === 1
-        ? conditions[0]
-        : conditions.length > 1
-        ? and(...conditions)
-        : undefined;
+    const whereClause = combineConditions(conditions);
 
     const [countResult] = await db
       .select({ count: sql`count(*)` })
       .from(equipment)
       .where(whereClause);
-
-    const total = parseInt(countResult?.count || "0", 10);
-    const totalPages = Math.ceil(total / limit) || 1;
 
     const list = await db
       .select()
@@ -68,12 +61,7 @@ export const getEquipment = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: list,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
-      },
+      pagination: buildPaginationMeta(countResult?.count, page, limit),
     });
   } catch (error) {
     next(error);
@@ -131,58 +119,18 @@ export const getEquipmentById = async (req, res, next) => {
   }
 };
 
+// Body is validated & trimmed by createEquipmentSchema
 export const createEquipment = async (req, res, next) => {
   try {
-    const {
-      name,
-      modelNo,
-      serialNumber,
-      category,
-      quantity,
-      roomNumber,
-      floor,
-      department,
-      manufacturer,
-      purchaseDate,
-      warrantyExpiry,
-      status,
-      lastServiceDate,
-      nextServiceDate,
-      serviceNotes,
-      technicianContact,
-      photo,
-    } = req.body;
-
-    if (!name || !category || !department) {
-      return res.status(400).json({
-        success: false,
-        message: "Equipment name, category, and department are required.",
-      });
-    }
-
-    const id = `eq_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const { quantity, status, ...item } = req.body;
 
     const [newItem] = await db
       .insert(equipment)
       .values({
-        id,
-        name: name.trim(),
-        modelNo: modelNo ? modelNo.trim() : undefined,
-        serialNumber: serialNumber ? serialNumber.trim() : undefined,
-        category: category.trim(),
-        quantity: parseInt(quantity) || 1,
-        roomNumber: roomNumber ? roomNumber.trim() : undefined,
-        floor: floor ? floor.trim() : undefined,
-        department: department.trim(),
-        manufacturer: manufacturer ? manufacturer.trim() : undefined,
-        purchaseDate: purchaseDate || undefined,
-        warrantyExpiry: warrantyExpiry || undefined,
+        ...item,
+        id: generateId("eq"),
+        quantity: quantity || 1,
         status: status || "Functional",
-        lastServiceDate: lastServiceDate || undefined,
-        nextServiceDate: nextServiceDate || undefined,
-        serviceNotes: serviceNotes ? serviceNotes.trim() : undefined,
-        technicianContact: technicianContact ? technicianContact.trim() : undefined,
-        photo: photo ? photo.trim() : undefined,
       })
       .returning();
 
@@ -196,6 +144,7 @@ export const createEquipment = async (req, res, next) => {
   }
 };
 
+// Body is validated by updateEquipmentSchema (unknown fields are stripped)
 export const updateEquipment = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -208,18 +157,9 @@ export const updateEquipment = async (req, res, next) => {
       });
     }
 
-    const updateData = {
-      ...req.body,
-      updatedAt: new Date(),
-    };
-
-    if (updateData.quantity) {
-      updateData.quantity = parseInt(updateData.quantity);
-    }
-
     const [updated] = await db
       .update(equipment)
-      .set(updateData)
+      .set({ ...req.body, updatedAt: new Date() })
       .where(eq(equipment.id, id))
       .returning();
 
@@ -260,19 +200,17 @@ export const deleteEquipment = async (req, res, next) => {
 
 export const getMaintenanceLogs = async (req, res, next) => {
   try {
-    const { equipmentId } = req.query;
+    const equipmentId = getQueryString(req.query, "equipmentId");
     const conditions = [];
 
     if (equipmentId) {
       conditions.push(eq(maintenanceLogs.equipmentId, equipmentId));
     }
 
-    const whereClause = conditions.length > 0 ? conditions[0] : undefined;
-
     const logs = await db
       .select()
       .from(maintenanceLogs)
-      .where(whereClause)
+      .where(combineConditions(conditions))
       .orderBy(desc(maintenanceLogs.serviceDate));
 
     return res.status(200).json({
@@ -284,40 +222,19 @@ export const getMaintenanceLogs = async (req, res, next) => {
   }
 };
 
+// Body is validated & trimmed by createMaintenanceLogSchema
 export const createMaintenanceLog = async (req, res, next) => {
   try {
-    const {
-      equipmentId,
-      equipmentName,
-      serviceDate,
-      servicedBy,
-      cost,
-      description,
-      statusAfterService,
-      nextScheduledDate,
-    } = req.body;
-
-    if (!equipmentId || !equipmentName || !serviceDate || !servicedBy || !description) {
-      return res.status(400).json({
-        success: false,
-        message: "Equipment ID, name, service date, serviced by, and description are required.",
-      });
-    }
-
-    const id = `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const { cost, statusAfterService, ...log } = req.body;
+    const statusAfter = statusAfterService || "Functional";
 
     const [newLog] = await db
       .insert(maintenanceLogs)
       .values({
-        id,
-        equipmentId,
-        equipmentName: equipmentName.trim(),
-        serviceDate: serviceDate.trim(),
-        servicedBy: servicedBy.trim(),
-        cost: cost ? String(cost) : "0.00",
-        description: description.trim(),
-        statusAfterService: statusAfterService || "Functional",
-        nextScheduledDate: nextScheduledDate ? nextScheduledDate.trim() : undefined,
+        ...log,
+        id: generateId("log"),
+        cost: cost !== undefined ? String(cost) : "0.00",
+        statusAfterService: statusAfter,
       })
       .returning();
 
@@ -325,12 +242,12 @@ export const createMaintenanceLog = async (req, res, next) => {
     await db
       .update(equipment)
       .set({
-        status: statusAfterService || "Functional",
-        lastServiceDate: serviceDate.trim(),
-        nextServiceDate: nextScheduledDate ? nextScheduledDate.trim() : undefined,
+        status: statusAfter,
+        lastServiceDate: log.serviceDate,
+        nextServiceDate: log.nextScheduledDate,
         updatedAt: new Date(),
       })
-      .where(eq(equipment.id, equipmentId));
+      .where(eq(equipment.id, log.equipmentId));
 
     return res.status(201).json({
       success: true,

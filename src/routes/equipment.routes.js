@@ -10,6 +10,12 @@ import {
   createMaintenanceLog,
 } from "../controllers/equipment.controller.js";
 import { verifyToken, requireRoles } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
+import {
+  createEquipmentSchema,
+  updateEquipmentSchema,
+  createMaintenanceLogSchema,
+} from "../validators/equipment.validator.js";
 
 const router = express.Router();
 
@@ -19,12 +25,18 @@ router.get("/stats", verifyToken, getEquipmentStats);
 
 // Maintenance logs
 router.get("/maintenance", verifyToken, getMaintenanceLogs);
-router.post("/maintenance", verifyToken, requireRoles("admin"), createMaintenanceLog);
+router.post(
+  "/maintenance",
+  verifyToken,
+  requireRoles("admin"),
+  validate({ body: createMaintenanceLogSchema }),
+  createMaintenanceLog
+);
 
 // Equipment CRUD
 router.get("/:id", verifyToken, getEquipmentById);
-router.post("/", verifyToken, requireRoles("admin"), createEquipment);
-router.put("/:id", verifyToken, requireRoles("admin"), updateEquipment);
+router.post("/", verifyToken, requireRoles("admin"), validate({ body: createEquipmentSchema }), createEquipment);
+router.put("/:id", verifyToken, requireRoles("admin"), validate({ body: updateEquipmentSchema }), updateEquipment);
 router.delete("/:id", verifyToken, requireRoles("admin"), deleteEquipment);
 
 export default router;

@@ -1,6 +1,9 @@
 import { db } from "../db/index.js";
 import { staff, dutyRosters, payrolls, leaveRequests } from "../db/schema.js";
-import { eq, ilike, or, and, desc, sql } from "drizzle-orm";
+import { eq, ilike, or, desc, sql } from "drizzle-orm";
+import { getPagination, buildPaginationMeta } from "../utils/pagination.js";
+import { combineConditions, getQueryString } from "../utils/query.js";
+import { generateId, today } from "../utils/generateId.js";
 
 // ==========================================
 // 1. STAFF DIRECTORY / PROFILES
@@ -8,13 +11,11 @@ import { eq, ilike, or, and, desc, sql } from "drizzle-orm";
 
 export const getStaff = async (req, res, next) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 12));
-    const offset = (page - 1) * limit;
-    const search = req.query.search ? req.query.search.trim() : "";
-    const department = req.query.department ? req.query.department.trim() : "";
-    const designation = req.query.designation ? req.query.designation.trim() : "";
-    const status = req.query.status ? req.query.status.trim() : "";
+    const { page, limit, offset } = getPagination(req.query, 12);
+    const search = getQueryString(req.query, "search");
+    const department = getQueryString(req.query, "department");
+    const designation = getQueryString(req.query, "designation");
+    const status = getQueryString(req.query, "status");
 
     const conditions = [];
 
@@ -42,20 +43,12 @@ export const getStaff = async (req, res, next) => {
       conditions.push(eq(staff.status, status));
     }
 
-    const whereClause =
-      conditions.length === 1
-        ? conditions[0]
-        : conditions.length > 1
-        ? and(...conditions)
-        : undefined;
+    const whereClause = combineConditions(conditions);
 
     const [countResult] = await db
       .select({ count: sql`count(*)` })
       .from(staff)
       .where(whereClause);
-
-    const total = parseInt(countResult?.count || "0", 10);
-    const totalPages = Math.ceil(total / limit) || 1;
 
     const list = await db
       .select()
@@ -68,12 +61,7 @@ export const getStaff = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: list,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
-      },
+      pagination: buildPaginationMeta(countResult?.count, page, limit),
     });
   } catch (error) {
     next(error);
@@ -101,66 +89,19 @@ export const getStaffById = async (req, res, next) => {
   }
 };
 
+// Body is validated & trimmed by createStaffSchema
 export const createStaff = async (req, res, next) => {
   try {
-    const {
-      name,
-      designation,
-      departmentId,
-      department,
-      phone,
-      email,
-      address,
-      photo,
-      joiningDate,
-      salary,
-      bloodGroup,
-      emergencyContact,
-      qualification,
-      documents,
-      status,
-    } = req.body;
-
-    if (!name || !designation || !department || !phone) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, designation, department, and phone are required.",
-      });
-    }
-
-    let parsedDocuments = [];
-    if (documents) {
-      if (Array.isArray(documents)) {
-        parsedDocuments = documents;
-      } else if (typeof documents === "string") {
-        try {
-          parsedDocuments = JSON.parse(documents);
-        } catch {
-          parsedDocuments = [];
-        }
-      }
-    }
-
-    const id = `staff_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const { salary, documents, joiningDate, status, ...profile } = req.body;
 
     const [newStaff] = await db
       .insert(staff)
       .values({
-        id,
-        name: name.trim(),
-        designation: designation.trim(),
-        departmentId: departmentId || undefined,
-        department: department.trim(),
-        phone: phone.trim(),
-        email: email ? email.trim() : undefined,
-        address: address ? address.trim() : undefined,
-        photo: photo ? photo.trim() : undefined,
-        joiningDate: joiningDate || new Date().toISOString().slice(0, 10),
-        salary: salary ? String(salary) : "25000.00",
-        bloodGroup: bloodGroup || undefined,
-        emergencyContact: emergencyContact || undefined,
-        qualification: qualification ? qualification.trim() : undefined,
-        documents: parsedDocuments,
+        ...profile,
+        id: generateId("staff"),
+        joiningDate: joiningDate || today(),
+        salary: salary !== undefined ? String(salary) : "25000.00",
+        documents: documents || [],
         status: status || "Active",
       })
       .returning();
@@ -175,6 +116,7 @@ export const createStaff = async (req, res, next) => {
   }
 };
 
+// Body is validated by updateStaffSchema (unknown fields are stripped)
 export const updateStaff = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -192,20 +134,8 @@ export const updateStaff = async (req, res, next) => {
       updatedAt: new Date(),
     };
 
-    if (updateData.salary) {
+    if (updateData.salary !== undefined) {
       updateData.salary = String(updateData.salary);
-    }
-
-    if (updateData.documents !== undefined) {
-      if (typeof updateData.documents === "string") {
-        try {
-          updateData.documents = JSON.parse(updateData.documents);
-        } catch {
-          updateData.documents = [];
-        }
-      } else if (!Array.isArray(updateData.documents)) {
-        updateData.documents = [];
-      }
     }
 
     const [updated] = await db
@@ -251,8 +181,6 @@ export const deleteStaff = async (req, res, next) => {
 
 export const getStaffStats = async (req, res, next) => {
   try {
-    const today = new Date().toISOString().slice(0, 10);
-
     const [staffSummary] = await db
       .select({
         totalStaff: sql`count(*)`,
@@ -263,7 +191,7 @@ export const getStaffStats = async (req, res, next) => {
     const [dutyToday] = await db
       .select({ count: sql`count(*)` })
       .from(dutyRosters)
-      .where(eq(dutyRosters.date, today));
+      .where(eq(dutyRosters.date, today()));
 
     const [pendingLeaves] = await db
       .select({ count: sql`count(*)` })
@@ -290,10 +218,10 @@ export const getStaffStats = async (req, res, next) => {
 
 export const getDutyRosters = async (req, res, next) => {
   try {
-    const date = req.query.date ? req.query.date.trim() : "";
-    const shift = req.query.shift ? req.query.shift.trim() : "";
-    const department = req.query.department ? req.query.department.trim() : "";
-    const search = req.query.search ? req.query.search.trim() : "";
+    const date = getQueryString(req.query, "date");
+    const shift = getQueryString(req.query, "shift");
+    const department = getQueryString(req.query, "department");
+    const search = getQueryString(req.query, "search");
 
     const conditions = [];
 
@@ -316,17 +244,10 @@ export const getDutyRosters = async (req, res, next) => {
       );
     }
 
-    const whereClause =
-      conditions.length === 1
-        ? conditions[0]
-        : conditions.length > 1
-        ? and(...conditions)
-        : undefined;
-
     const rosters = await db
       .select()
       .from(dutyRosters)
-      .where(whereClause)
+      .where(combineConditions(conditions))
       .orderBy(desc(dutyRosters.date), dutyRosters.shift);
 
     return res.status(200).json({
@@ -338,33 +259,18 @@ export const getDutyRosters = async (req, res, next) => {
   }
 };
 
+// Body is validated & trimmed by createDutyRosterSchema
 export const createDutyRoster = async (req, res, next) => {
   try {
-    const { staffId, staffName, staffRole, department, shift, date, wardOrRoom, status, notes } =
-      req.body;
-
-    if (!staffName || !department || !shift || !date) {
-      return res.status(400).json({
-        success: false,
-        message: "Staff name, department, shift, and date are required.",
-      });
-    }
-
-    const id = `roster_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const { staffId, status, ...roster } = req.body;
 
     const [newRoster] = await db
       .insert(dutyRosters)
       .values({
-        id,
+        ...roster,
+        id: generateId("roster"),
         staffId: staffId || "manual",
-        staffName: staffName.trim(),
-        staffRole: staffRole ? staffRole.trim() : undefined,
-        department: department.trim(),
-        shift: shift.trim(),
-        date: date.trim(),
-        wardOrRoom: wardOrRoom ? wardOrRoom.trim() : undefined,
         status: status || "Scheduled",
-        notes: notes ? notes.trim() : undefined,
       })
       .returning();
 
@@ -378,6 +284,7 @@ export const createDutyRoster = async (req, res, next) => {
   }
 };
 
+// Body is validated by updateDutyRosterSchema (unknown fields are stripped)
 export const updateDutyRoster = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -431,8 +338,8 @@ export const deleteDutyRoster = async (req, res, next) => {
 
 export const getPayrolls = async (req, res, next) => {
   try {
-    const month = req.query.month ? req.query.month.trim() : "";
-    const status = req.query.status ? req.query.status.trim() : "";
+    const month = getQueryString(req.query, "month");
+    const status = getQueryString(req.query, "status");
 
     const conditions = [];
     if (month && month !== "all") {
@@ -442,17 +349,10 @@ export const getPayrolls = async (req, res, next) => {
       conditions.push(eq(payrolls.paymentStatus, status));
     }
 
-    const whereClause =
-      conditions.length === 1
-        ? conditions[0]
-        : conditions.length > 1
-        ? and(...conditions)
-        : undefined;
-
     const records = await db
       .select()
       .from(payrolls)
-      .where(whereClause)
+      .where(combineConditions(conditions))
       .orderBy(desc(payrolls.createdAt));
 
     return res.status(200).json({
@@ -464,6 +364,7 @@ export const getPayrolls = async (req, res, next) => {
   }
 };
 
+// Body is validated & coerced by createPayrollSchema
 export const createPayroll = async (req, res, next) => {
   try {
     const {
@@ -471,43 +372,31 @@ export const createPayroll = async (req, res, next) => {
       staffName,
       month,
       basicSalary,
-      bonus,
-      deduction,
+      bonus = 0,
+      deduction = 0,
       paymentStatus,
       paymentDate,
       paymentMethod,
       remarks,
     } = req.body;
 
-    if (!staffName || !month || !basicSalary) {
-      return res.status(400).json({
-        success: false,
-        message: "Staff name, month, and basic salary are required.",
-      });
-    }
-
-    const basic = parseFloat(basicSalary) || 0;
-    const bon = parseFloat(bonus) || 0;
-    const ded = parseFloat(deduction) || 0;
-    const net = basic + bon - ded;
-
-    const id = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const net = basicSalary + bonus - deduction;
 
     const [newPay] = await db
       .insert(payrolls)
       .values({
-        id,
+        id: generateId("pay"),
         staffId: staffId || "staff_manual",
-        staffName: staffName.trim(),
-        month: month.trim(),
-        basicSalary: String(basic),
-        bonus: String(bon),
-        deduction: String(ded),
+        staffName,
+        month,
+        basicSalary: String(basicSalary),
+        bonus: String(bonus),
+        deduction: String(deduction),
         netSalary: String(net),
         paymentStatus: paymentStatus || "Paid",
-        paymentDate: paymentDate || new Date().toISOString().slice(0, 10),
+        paymentDate: paymentDate || today(),
         paymentMethod: paymentMethod || "Bank Transfer",
-        remarks: remarks ? remarks.trim() : undefined,
+        remarks,
       })
       .returning();
 
@@ -527,19 +416,17 @@ export const createPayroll = async (req, res, next) => {
 
 export const getLeaveRequests = async (req, res, next) => {
   try {
-    const status = req.query.status ? req.query.status.trim() : "";
+    const status = getQueryString(req.query, "status");
     const conditions = [];
 
     if (status && status !== "all") {
       conditions.push(eq(leaveRequests.status, status));
     }
 
-    const whereClause = conditions.length > 0 ? conditions[0] : undefined;
-
     const requests = await db
       .select()
       .from(leaveRequests)
-      .where(whereClause)
+      .where(combineConditions(conditions))
       .orderBy(desc(leaveRequests.createdAt));
 
     return res.status(200).json({
@@ -551,30 +438,18 @@ export const getLeaveRequests = async (req, res, next) => {
   }
 };
 
+// Body is validated & trimmed by createLeaveRequestSchema
 export const createLeaveRequest = async (req, res, next) => {
   try {
-    const { staffId, staffName, leaveType, startDate, endDate, totalDays, reason } = req.body;
-
-    if (!staffName || !leaveType || !startDate || !endDate || !reason) {
-      return res.status(400).json({
-        success: false,
-        message: "Staff name, leave type, start date, end date, and reason are required.",
-      });
-    }
-
-    const id = `leave_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const { staffId, totalDays, ...leave } = req.body;
 
     const [newLeave] = await db
       .insert(leaveRequests)
       .values({
-        id,
+        ...leave,
+        id: generateId("leave"),
         staffId: staffId || "manual",
-        staffName: staffName.trim(),
-        leaveType: leaveType.trim(),
-        startDate: startDate.trim(),
-        endDate: endDate.trim(),
-        totalDays: parseInt(totalDays) || 1,
-        reason: reason.trim(),
+        totalDays: totalDays || 1,
         status: "Pending",
       })
       .returning();
@@ -589,17 +464,11 @@ export const createLeaveRequest = async (req, res, next) => {
   }
 };
 
+// Body is validated by updateLeaveStatusSchema
 export const updateLeaveStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status, approvedBy } = req.body;
-
-    if (!["Approved", "Rejected", "Pending"].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "Status must be Approved, Rejected, or Pending.",
-      });
-    }
 
     const [updated] = await db
       .update(leaveRequests)

@@ -1,22 +1,23 @@
 import { db } from "../db/index.js";
 import { expenses } from "../db/schema.js";
-import { eq, ilike, or, and, desc, sql, gte, lte } from "drizzle-orm";
+import { eq, ilike, or, desc, sql, gte, lte } from "drizzle-orm";
+import { getPagination, buildPaginationMeta } from "../utils/pagination.js";
+import { combineConditions, getQueryString } from "../utils/query.js";
+import { generateId, today } from "../utils/generateId.js";
 
 /**
  * @desc Get all expenses with pagination, search, category & date filters
- * @route GET /api/expenses
+ * @route GET /api/v1/expenses
  * @access Authenticated
  */
 export const getExpenses = async (req, res, next) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 10));
-    const offset = (page - 1) * limit;
-    const search = req.query.search ? req.query.search.trim() : "";
-    const category = req.query.category ? req.query.category.trim() : "";
-    const status = req.query.status ? req.query.status.trim() : "";
-    const startDate = req.query.startDate ? req.query.startDate.trim() : "";
-    const endDate = req.query.endDate ? req.query.endDate.trim() : "";
+    const { page, limit, offset } = getPagination(req.query, 10);
+    const search = getQueryString(req.query, "search");
+    const category = getQueryString(req.query, "category");
+    const status = getQueryString(req.query, "status");
+    const startDate = getQueryString(req.query, "startDate");
+    const endDate = getQueryString(req.query, "endDate");
 
     const conditions = [];
 
@@ -49,12 +50,7 @@ export const getExpenses = async (req, res, next) => {
       conditions.push(lte(expenses.date, endDate));
     }
 
-    const whereClause =
-      conditions.length === 1
-        ? conditions[0]
-        : conditions.length > 1
-        ? and(...conditions)
-        : undefined;
+    const whereClause = combineConditions(conditions);
 
     // Total count and total amount of filtered query
     const [summaryResult] = await db
@@ -65,9 +61,7 @@ export const getExpenses = async (req, res, next) => {
       .from(expenses)
       .where(whereClause);
 
-    const total = parseInt(summaryResult?.count || "0", 10);
     const totalAmount = parseFloat(summaryResult?.totalAmount || "0");
-    const totalPages = Math.ceil(total / limit) || 1;
 
     // Fetch paginated list
     const list = await db
@@ -82,10 +76,7 @@ export const getExpenses = async (req, res, next) => {
       success: true,
       data: list,
       pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
+        ...buildPaginationMeta(summaryResult?.count, page, limit),
         totalAmount,
       },
     });
@@ -96,7 +87,7 @@ export const getExpenses = async (req, res, next) => {
 
 /**
  * @desc Get expense summary statistics (breakdown by category, monthly total)
- * @route GET /api/expenses/stats
+ * @route GET /api/v1/expenses/stats
  * @access Authenticated
  */
 export const getExpenseStats = async (req, res, next) => {
@@ -104,7 +95,7 @@ export const getExpenseStats = async (req, res, next) => {
     // Current date helpers
     const now = new Date();
     const currentYearMonth = now.toISOString().slice(0, 7); // e.g. "2026-10"
-    const todayStr = now.toISOString().slice(0, 10); // e.g. "2026-10-29"
+    const todayStr = today(); // e.g. "2026-10-29"
 
     // 1. Overall & Monthly total
     const [overall] = await db
@@ -164,7 +155,7 @@ export const getExpenseStats = async (req, res, next) => {
 
 /**
  * @desc Get single expense by ID
- * @route GET /api/expenses/:id
+ * @route GET /api/v1/expenses/:id
  * @access Authenticated
  */
 export const getExpenseById = async (req, res, next) => {
@@ -189,8 +180,8 @@ export const getExpenseById = async (req, res, next) => {
 };
 
 /**
- * @desc Create new expense entry
- * @route POST /api/expenses
+ * @desc Create new expense entry (body validated by createExpenseSchema)
+ * @route POST /api/v1/expenses
  * @access Authenticated
  */
 export const createExpense = async (req, res, next) => {
@@ -209,47 +200,22 @@ export const createExpense = async (req, res, next) => {
       status,
     } = req.body;
 
-    if (!title || !title.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Expense title is required.",
-      });
-    }
-
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Please enter a valid positive expense amount.",
-      });
-    }
-
-    if (!category || !category.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Expense category is required.",
-      });
-    }
-
-    const expenseId = `exp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const generatedVoucher =
-      voucherNo && voucherNo.trim()
-        ? voucherNo.trim()
-        : `VCH-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(
-            1000 + Math.random() * 9000
-          )}`;
+      voucherNo ||
+      `VCH-${today().replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const newExpense = {
-      id: expenseId,
-      title: title.trim(),
-      description: description?.trim() || "",
-      date: date?.trim() || new Date().toISOString().slice(0, 10),
+      id: generateId("exp", 5),
+      title,
+      description: description || "",
+      date: date || today(),
       amount: String(amount),
-      purpose: purpose?.trim() || "",
-      category: category.trim(),
-      billCopy: billCopy?.trim() || null,
+      purpose: purpose || "",
+      category,
+      billCopy: billCopy || null,
       voucherNo: generatedVoucher,
-      paymentMethod: paymentMethod?.trim() || "Cash",
-      paidTo: paidTo?.trim() || "",
+      paymentMethod: paymentMethod || "Cash",
+      paidTo: paidTo || "",
       status: status || "Paid",
       recordedBy: req.user?.name || "Admin",
       createdAt: new Date(),
@@ -269,8 +235,8 @@ export const createExpense = async (req, res, next) => {
 };
 
 /**
- * @desc Update expense entry
- * @route PUT /api/expenses/:id
+ * @desc Update expense entry (body validated by updateExpenseSchema)
+ * @route PUT /api/v1/expenses/:id
  * @access Authenticated
  */
 export const updateExpense = async (req, res, next) => {
@@ -303,16 +269,16 @@ export const updateExpense = async (req, res, next) => {
       updatedAt: new Date(),
     };
 
-    if (title !== undefined) updateData.title = title.trim();
-    if (description !== undefined) updateData.description = description.trim();
-    if (date !== undefined) updateData.date = date.trim();
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (date !== undefined) updateData.date = date;
     if (amount !== undefined) updateData.amount = String(amount);
-    if (purpose !== undefined) updateData.purpose = purpose.trim();
-    if (category !== undefined) updateData.category = category.trim();
-    if (billCopy !== undefined) updateData.billCopy = billCopy ? billCopy.trim() : null;
-    if (voucherNo !== undefined) updateData.voucherNo = voucherNo.trim();
-    if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod.trim();
-    if (paidTo !== undefined) updateData.paidTo = paidTo.trim();
+    if (purpose !== undefined) updateData.purpose = purpose;
+    if (category !== undefined) updateData.category = category;
+    if (billCopy !== undefined) updateData.billCopy = billCopy || null;
+    if (voucherNo !== undefined) updateData.voucherNo = voucherNo;
+    if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
+    if (paidTo !== undefined) updateData.paidTo = paidTo;
     if (status !== undefined) updateData.status = status;
 
     const [updated] = await db
@@ -333,7 +299,7 @@ export const updateExpense = async (req, res, next) => {
 
 /**
  * @desc Delete expense entry
- * @route DELETE /api/expenses/:id
+ * @route DELETE /api/v1/expenses/:id
  * @access Admin only
  */
 export const deleteExpense = async (req, res, next) => {

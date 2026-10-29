@@ -39,7 +39,7 @@ const runTests = async () => {
 
   // 1. Admin Login
   console.log("1. Testing Admin Login (admin@netro.com / 12345678)...");
-  const adminRes = await request("/api/auth/login", "POST", {
+  const adminRes = await request("/api/v1/auth/login", "POST", {
     email: "admin@netro.com",
     password: "12345678",
   });
@@ -52,7 +52,7 @@ const runTests = async () => {
 
   // 2. Pharmacy Login
   console.log("\n2. Testing Pharmacy Login (pharmarcy@netro.com / 12345678)...");
-  const pharmaRes = await request("/api/auth/login", "POST", {
+  const pharmaRes = await request("/api/v1/auth/login", "POST", {
     email: "pharmarcy@netro.com",
     password: "12345678",
   });
@@ -63,35 +63,35 @@ const runTests = async () => {
   if (!pharmaRes.data?.token) throw new Error("Pharmacy login failed!");
   const pharmaToken = pharmaRes.data.token;
 
-  // 3. Test /api/auth/me
-  console.log("\n3. Testing GET /api/auth/me with JWT...");
-  const meRes = await request("/api/auth/me", "GET", null, adminToken);
+  // 3. Test /api/v1/auth/me
+  console.log("\n3. Testing GET /api/v1/auth/me with JWT...");
+  const meRes = await request("/api/v1/auth/me", "GET", null, adminToken);
   console.log("   Status:", meRes.status);
   console.log("   Authenticated Profile:", meRes.data?.data?.email, "(Role:", meRes.data?.data?.role, ")");
 
   // 4. Test Doctors endpoint
-  console.log("\n4. Testing GET /api/doctors (Neon DB)...");
-  const docRes = await request("/api/doctors");
+  console.log("\n4. Testing GET /api/v1/doctors (Neon DB)...");
+  const docRes = await request("/api/v1/doctors");
   console.log("   Status:", docRes.status);
   console.log("   Doctors count in Neon DB:", docRes.data?.count);
 
   // 5. Test Pharmacy Medicines with JWT
-  console.log("\n5. Testing GET /api/pharmacy/medicines with JWT...");
-  const medRes = await request("/api/pharmacy/medicines", "GET", null, pharmaToken);
+  console.log("\n5. Testing GET /api/v1/pharmacy/medicines with JWT...");
+  const medRes = await request("/api/v1/pharmacy/medicines", "GET", null, pharmaToken);
   console.log("   Status:", medRes.status);
   console.log("   Medicines in stock:", medRes.data?.count);
 
   // 6. Test Pharmacy KPI Stats
-  console.log("\n6. Testing GET /api/pharmacy/stats with JWT...");
-  const statsRes = await request("/api/pharmacy/stats", "GET", null, pharmaToken);
+  console.log("\n6. Testing GET /api/v1/pharmacy/stats with JWT...");
+  const statsRes = await request("/api/v1/pharmacy/stats", "GET", null, pharmaToken);
   console.log("   Status:", statsRes.status);
   console.log("   Total Stock Valuation:", statsRes.data?.data?.totalStockValuation);
   console.log("   Low Stock Count:", statsRes.data?.data?.lowStockCount);
 
   // 7. Test POS Sale & Inventory Deduction
-  console.log("\n7. Testing POST /api/pharmacy/invoices (Create Sale & Auto Deduct Stock)...");
+  console.log("\n7. Testing POST /api/v1/pharmacy/invoices (Create Sale & Auto Deduct Stock)...");
   const saleRes = await request(
-    "/api/pharmacy/invoices",
+    "/api/v1/pharmacy/invoices",
     "POST",
     {
       customerName: "Md. Tanvir Hossain",
@@ -118,17 +118,17 @@ const runTests = async () => {
   console.log("   WhatsApp Sent:", saleRes.data?.data?.whatsappSent);
 
   // 8. Test Departments CRUD & RBAC
-  console.log("\n8. Testing Departments CRUD & RBAC (/api/departments)...");
+  console.log("\n8. Testing Departments CRUD & RBAC (/api/v1/departments)...");
   // 8a. Read departments
-  const deptListRes = await request("/api/departments?page=1&limit=4", "GET", null, adminToken);
-  console.log("   GET /api/departments Status:", deptListRes.status);
+  const deptListRes = await request("/api/v1/departments?page=1&limit=4", "GET", null, adminToken);
+  console.log("   GET /api/v1/departments Status:", deptListRes.status);
   console.log("   Total departments:", deptListRes.data?.pagination?.total);
   console.log("   Current page items:", deptListRes.data?.data?.length);
 
   // 8b. Create department as Admin
-  console.log("   Testing POST /api/departments as Admin...");
+  console.log("   Testing POST /api/v1/departments as Admin...");
   const newDeptRes = await request(
-    "/api/departments",
+    "/api/v1/departments",
     "POST",
     {
       name: "Oncology & Chemotherapy",
@@ -151,7 +151,7 @@ const runTests = async () => {
   // 8c. Test RBAC: Non-admin should be 403 Forbidden
   console.log("   Testing RBAC: Non-admin trying to delete department...");
   const nonAdminDeleteRes = await request(
-    `/api/departments/${createdDeptId}`,
+    `/api/v1/departments/${createdDeptId}`,
     "DELETE",
     null,
     pharmaToken // pharmacist role, not admin
@@ -160,9 +160,9 @@ const runTests = async () => {
   if (nonAdminDeleteRes.status !== 403) throw new Error("RBAC failed! Non-admin should get 403.");
 
   // 8d. Delete department as Admin
-  console.log("   Testing DELETE /api/departments as Admin...");
+  console.log("   Testing DELETE /api/v1/departments as Admin...");
   const adminDeleteRes = await request(
-    `/api/departments/${createdDeptId}`,
+    `/api/v1/departments/${createdDeptId}`,
     "DELETE",
     null,
     adminToken

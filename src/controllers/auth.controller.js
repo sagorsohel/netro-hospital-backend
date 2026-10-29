@@ -10,22 +10,14 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 // 1. User Login (Admin & Pharmacist)
 export const login = async (req, res, next) => {
   try {
+    // Body validated by loginSchema (email is trimmed & lowercased)
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required.",
-      });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
 
     // Find user in Neon DB
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, normalizedEmail));
+      .where(eq(users.email, email));
 
     if (!user) {
       return res.status(401).json({
@@ -83,16 +75,8 @@ export const login = async (req, res, next) => {
 // 2. User Registration
 export const register = async (req, res, next) => {
   try {
-    const { name, email, password, role = "staff", branchName, phone } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, email, and password are required.",
-      });
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
+    // Body validated by registerSchema (email is trimmed & lowercased)
+    const { name, email: normalizedEmail, password, role, branchName, phone } = req.body;
 
     // Check if user already exists
     const [existingUser] = await db
@@ -162,21 +146,8 @@ export const getMe = async (req, res) => {
 // 4. Change Password
 export const changePassword = async (req, res, next) => {
   try {
+    // Body validated by changePasswordSchema
     const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Both current password and new password are required.",
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "New password must be at least 6 characters long.",
-      });
-    }
 
     // Get user with password from DB
     const [user] = await db.select().from(users).where(eq(users.id, req.user.id));

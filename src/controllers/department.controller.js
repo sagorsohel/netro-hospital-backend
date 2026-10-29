@@ -1,21 +1,21 @@
 import { db } from "../db/index.js";
 import { departments } from "../db/schema.js";
-import { eq, ilike, or, and, desc, sql } from "drizzle-orm";
+import { eq, ilike, or, desc, sql } from "drizzle-orm";
+import { getPagination, buildPaginationMeta } from "../utils/pagination.js";
+import { combineConditions, getQueryString } from "../utils/query.js";
 
 /**
  * @desc Get all departments with pagination and search
- * @route GET /api/departments
+ * @route GET /api/v1/departments
  * @access Public / Authenticated (Admin, Staff, Manager can view)
  */
 export const getDepartments = async (req, res, next) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 8));
-    const offset = (page - 1) * limit;
-    const search = req.query.search ? req.query.search.trim() : "";
-    const status = req.query.status ? req.query.status.trim() : "";
+    const { page, limit, offset } = getPagination(req.query, 8);
+    const search = getQueryString(req.query, "search");
+    const status = getQueryString(req.query, "status");
 
-    let conditions = [];
+    const conditions = [];
     if (search) {
       conditions.push(
         or(
@@ -29,21 +29,13 @@ export const getDepartments = async (req, res, next) => {
       conditions.push(eq(departments.status, status));
     }
 
-    const whereClause =
-      conditions.length === 1
-        ? conditions[0]
-        : conditions.length > 1
-        ? and(...conditions)
-        : undefined;
+    const whereClause = combineConditions(conditions);
 
     // Get total count
     const [countResult] = await db
       .select({ count: sql`count(*)` })
       .from(departments)
       .where(whereClause);
-
-    const total = parseInt(countResult?.count || "0", 10);
-    const totalPages = Math.ceil(total / limit) || 1;
 
     // Get paginated departments
     const list = await db
@@ -57,12 +49,7 @@ export const getDepartments = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: list,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages,
-      },
+      pagination: buildPaginationMeta(countResult?.count, page, limit),
     });
   } catch (error) {
     next(error);
@@ -71,7 +58,7 @@ export const getDepartments = async (req, res, next) => {
 
 /**
  * @desc Get department by ID
- * @route GET /api/departments/:id
+ * @route GET /api/v1/departments/:id
  * @access Authenticated
  */
 export const getDepartmentById = async (req, res, next) => {
@@ -99,8 +86,8 @@ export const getDepartmentById = async (req, res, next) => {
 };
 
 /**
- * @desc Create new department (Admin only)
- * @route POST /api/departments
+ * @desc Create new department (Admin only, body validated by createDepartmentSchema)
+ * @route POST /api/v1/departments
  * @access Private (Admin only)
  */
 export const createDepartment = async (req, res, next) => {
@@ -117,13 +104,6 @@ export const createDepartment = async (req, res, next) => {
       contactPhone,
       status = "Active",
     } = req.body;
-
-    if (!name || !name.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Department name is required.",
-      });
-    }
 
     // Generate unique slug
     const baseSlug = name
@@ -163,8 +143,8 @@ export const createDepartment = async (req, res, next) => {
 };
 
 /**
- * @desc Update department (Admin only)
- * @route PUT /api/departments/:id
+ * @desc Update department (Admin only, body validated by updateDepartmentSchema)
+ * @route PUT /api/v1/departments/:id
  * @access Private (Admin only)
  */
 export const updateDepartment = async (req, res, next) => {
@@ -199,7 +179,7 @@ export const updateDepartment = async (req, res, next) => {
     const [updatedDepartment] = await db
       .update(departments)
       .set({
-        name: name !== undefined ? name.trim() : existing.name,
+        name: name !== undefined ? name : existing.name,
         description: description !== undefined ? description?.trim() : existing.description,
         icon: icon !== undefined ? icon : existing.icon,
         image: image !== undefined ? image : existing.image,
@@ -227,7 +207,7 @@ export const updateDepartment = async (req, res, next) => {
 
 /**
  * @desc Delete department (Admin only)
- * @route DELETE /api/departments/:id
+ * @route DELETE /api/v1/departments/:id
  * @access Private (Admin only)
  */
 export const deleteDepartment = async (req, res, next) => {

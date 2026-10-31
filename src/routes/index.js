@@ -8,6 +8,7 @@ import expenseRoutes from "./expense.routes.js";
 import staffRoutes from "./staff.routes.js";
 import equipmentRoutes from "./equipment.routes.js";
 import uploadRoutes from "./upload.routes.js";
+import roomRoutes from "./room.routes.js";
 
 // API v1 — mounted at /api/v1 in app.js
 const router = Router();
@@ -19,6 +20,7 @@ router.use("/doctors", doctorRoutes);
 router.use("/expenses", expenseRoutes);
 router.use("/staff", staffRoutes);
 router.use("/equipment", equipmentRoutes);
+router.use("/rooms", roomRoutes);
 router.use("/upload", uploadRoutes);
 
 export default router;

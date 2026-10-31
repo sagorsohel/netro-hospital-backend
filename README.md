@@ -1,45 +1,68 @@
 # Netro Hospital Backend API
 
-Express.js and Node.js REST API server for **Netro Hospital Management System** and **Netro Hospital Mobile App**.
+High-performance Express.js REST API server powering **Netro Hospital Management System (HMS)** and clinical operations.
 
-## Tech Stack
-- **Node.js**
-- **Express.js**
-- **Nodemon** (development hot reload)
-- **CORS**, **Morgan**, **Dotenv**
+## 🚀 Tech Stack
+- **Runtime:** Node.js (ES Modules `"type": "module"`)
+- **Web Framework:** Express.js 4
+- **Database:** Neon Serverless PostgreSQL
+- **ORM:** Drizzle ORM
+- **Validation:** Zod v4
+- **Authentication:** JWT (`jsonwebtoken`) + bcryptjs password hashing
+- **File Storage:** Multer memory storage + Cloudinary CDN stream
+- **Logging & Security:** Morgan, CORS, Dotenv
 
-## Installation & Setup
+---
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+## 📖 Complete Architecture & API Specification
+For the full architectural breakdown, 14 database table schemas, controller workflows, and frontend Redux integration details, see:
+👉 **[BACKEND_ARCHITECTURE.md](./BACKEND_ARCHITECTURE.md)**
 
-2. Copy environment file:
-   ```bash
-   cp .env.example .env
-   ```
+---
 
-3. Run in development mode (with nodemon):
-   ```bash
-   npm run dev
-   ```
+## 🛠️ Quick Start
 
-4. Run in production mode:
-   ```bash
-   npm start
-   ```
+### 1. Install dependencies
+```bash
+npm install
+```
 
-## API Endpoints
+### 2. Configure Environment (`.env`)
+```bash
+PORT=5001
+DATABASE_URL=postgresql://neondb_owner:...@ep-....neon.tech/neondb?sslmode=require
+JWT_SECRET=netro_hospital_jwt_super_secret_key_2026_secure
+JWT_EXPIRES_IN=7d
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
 
-- `GET /` - Root status & docs
-- `GET /api/v1/health` - Service health status
-- `GET /api/v1/doctors` - Get all doctors
-- `GET /api/v1/doctors/:id` - Get doctor details
-- `POST /api/v1/doctors` - Add new doctor
-- `GET /api/v1/patients` - List all patients
-- `GET /api/v1/patients/:id` - Get patient details
-- `POST /api/v1/patients` - Register patient
-- `GET /api/v1/appointments` - List appointments
-- `POST /api/v1/appointments` - Book appointment
-- `PATCH /api/v1/appointments/:id/status` - Update appointment status
+### 3. Run Development Server
+```bash
+npm run dev
+```
+The server will start at `http://localhost:5001` and automatically ping Neon PostgreSQL. If the database is empty, it runs initial seeders automatically.
+
+---
+
+## ⚡ Active API Modules
+
+Both `/api/v1` and `/api` (legacy backward compatibility) are supported:
+
+- `POST /api/v1/auth/login` — Staff & Admin JWT Authentication
+- `POST /api/v1/auth/register` — Account registration
+- `GET  /api/v1/auth/me` — Authenticated staff profile
+- `GET  /api/v1/departments` — Hospital department directory
+- `GET  /api/v1/doctors` — Clinical doctor schedules & fees
+- `GET  /api/v1/staff` — Staff directory, duty rosters, payrolls & leave
+- `GET  /api/v1/equipment` — Medical equipment inventory & servicing logs
+- `GET  /api/v1/expenses` — Hospital expense vouchers & stats
+- `POST /api/v1/upload/image` — Direct Cloudinary asset upload
+- `GET  /api/v1/health` — System uptime and status healthcheck
+
+---
+
+## 🔑 Pre-Configured Seed Logins
+- **Admin:** `admin@netro.com` / `12345678`
+- **Pharmacist:** `pharmacy@netro.com` / `12345678`

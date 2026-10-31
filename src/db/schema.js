@@ -264,3 +264,26 @@ export const maintenanceLogs = pgTable("maintenance_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// 15. Rooms & Beds table (Section 4.7 Inpatient & Ward Management)
+export const rooms = pgTable("rooms", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  roomNumber: varchar("room_number", { length: 100 }).notNull(),
+  floor: varchar("floor", { length: 100 }).notNull(),
+  roomType: varchar("room_type", { length: 100 }).default("General Ward"), // 'General Ward', 'Single Cabin', 'Deluxe Cabin', 'VIP Suite', 'ICU', 'CCU', 'NICU', 'Post-Op'
+  department: varchar("department", { length: 255 }).default("Inpatient (IPD)"),
+  perDayCharge: numeric("per_day_charge", { precision: 12, scale: 2 }).notNull().default("1500.00"),
+  bedCount: integer("bed_count").notNull().default(1),
+  occupiedBeds: integer("occupied_beds").notNull().default(0),
+  status: varchar("status", { length: 50 }).notNull().default("Available"), // 'Available', 'Booked', 'Maintenance', 'Cleaning'
+  patientName: varchar("patient_name", { length: 255 }),
+  admissionId: varchar("admission_id", { length: 100 }),
+  bedNumbers: jsonb("bed_numbers").default([]), // Custom bed numbers e.g. ['A1', 'B3', 'Bed 1']
+  extraCharges: jsonb("extra_charges").default([]), // Dynamic custom key-values: [{ key: 'Oxygen', value: 500 }]
+  amenities: jsonb("amenities").default([]), // ['Oxygen Pipeline', 'Attached Washroom', 'AC']
+  notes: varchar("notes", { length: 1000 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+

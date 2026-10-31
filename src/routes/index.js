@@ -11,6 +11,8 @@ import uploadRoutes from "./upload.routes.js";
 import roomRoutes from "./room.routes.js";
 import operationRoutes from "./operation.routes.js";
 import testRoutes from "./test.routes.js";
+import patientRoutes from "./patient.routes.js";
+import admissionRoutes from "./admission.routes.js";
 
 // API v1 — mounted at /api/v1 in app.js
 const router = Router();
@@ -25,6 +27,8 @@ router.use("/equipment", equipmentRoutes);
 router.use("/rooms", roomRoutes);
 router.use("/operations", operationRoutes);
 router.use("/tests", testRoutes);
+router.use("/patients", patientRoutes);
+router.use("/admissions", admissionRoutes);
 router.use("/upload", uploadRoutes);
 
 export default router;

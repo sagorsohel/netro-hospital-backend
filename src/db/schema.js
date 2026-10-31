@@ -51,18 +51,29 @@ export const doctors = pgTable("doctors", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// 3. Patients table
+// 3. Patients table (Permanent Digital Profile)
 export const patients = pgTable("patients", {
   id: varchar("id", { length: 64 }).primaryKey(),
+  patientId: varchar("patient_id", { length: 64 }).unique(), // Auto-generated unique e.g. PAT-2026-0001
   name: varchar("name", { length: 255 }).notNull(),
   age: integer("age"),
+  dob: varchar("dob", { length: 50 }),
   gender: varchar("gender", { length: 20 }),
   phone: varchar("phone", { length: 50 }).notNull(),
   email: varchar("email", { length: 255 }),
   bloodGroup: varchar("blood_group", { length: 10 }),
   address: varchar("address", { length: 500 }),
+  guardianName: varchar("guardian_name", { length: 255 }),
+  guardianPhone: varchar("guardian_phone", { length: 50 }),
+  guardianRelation: varchar("guardian_relation", { length: 50 }), // Father, Mother, Spouse, etc.
+  emergencyContact: varchar("emergency_contact", { length: 50 }),
+  maritalStatus: varchar("marital_status", { length: 50 }).default("Single"),
+  occupation: varchar("occupation", { length: 100 }),
   memberId: varchar("member_id", { length: 50 }),
+  allergies: varchar("allergies", { length: 500 }),
+  status: varchar("status", { length: 50 }).default("Active"), // 'Active', 'Admitted', 'Discharged'
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // 4. Appointments table
@@ -322,6 +333,72 @@ export const diagnosticTests = pgTable("diagnostic_tests", {
   status: varchar("status", { length: 50 }).default("Active"), // 'Active', 'Inactive'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 18. Inpatient Admissions & POS Billing (Section 4.10 IPD Admission)
+export const admissions = pgTable("admissions", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  admissionNo: varchar("admission_no", { length: 100 }).unique().notNull(), // Unique Auto e.g. ADM-2026-0001
+  patientId: varchar("patient_id", { length: 64 }).notNull(),
+  patientUniqueId: varchar("patient_unique_id", { length: 64 }),
+  patientName: varchar("patient_name", { length: 255 }).notNull(),
+  patientPhone: varchar("patient_phone", { length: 50 }),
+  patientAge: integer("patient_age"),
+  patientGender: varchar("patient_gender", { length: 20 }),
+  guardianName: varchar("guardian_name", { length: 255 }),
+  guardianPhone: varchar("guardian_phone", { length: 50 }),
+  guardianRelation: varchar("guardian_relation", { length: 50 }),
+  admissionDate: timestamp("admission_date").defaultNow(),
+  dischargeDate: timestamp("discharge_date"),
+  status: varchar("status", { length: 50 }).default("Admitted"), // 'Admitted', 'Discharged', 'Under Observation'
+  roomId: varchar("room_id", { length: 64 }),
+  roomNumber: varchar("room_number", { length: 100 }),
+  roomName: varchar("room_name", { length: 255 }),
+  bedNumber: varchar("bed_number", { length: 50 }),
+  perDayCharge: numeric("per_day_charge", { precision: 12, scale: 2 }).default("1500.00"),
+  doctorId: varchar("doctor_id", { length: 64 }),
+  doctorName: varchar("doctor_name", { length: 255 }),
+  department: varchar("department", { length: 255 }),
+  operationId: varchar("operation_id", { length: 64 }),
+  operationName: varchar("operation_name", { length: 255 }),
+  operationPrice: numeric("operation_price", { precision: 12, scale: 2 }).default("0.00"),
+  extraCharges: jsonb("extra_charges").default([]), // [{ key: 'Oxygen', value: 500, unit: 'per day' }]
+  admissionFee: numeric("admission_fee", { precision: 12, scale: 2 }).default("500.00"),
+  roomCharge: numeric("room_charge", { precision: 12, scale: 2 }).default("0.00"),
+  operationCharge: numeric("operation_charge", { precision: 12, scale: 2 }).default("0.00"),
+  extraChargesTotal: numeric("extra_charges_total", { precision: 12, scale: 2 }).default("0.00"),
+  subtotal: numeric("subtotal", { precision: 12, scale: 2 }).default("0.00"),
+  discountAmount: numeric("discount_amount", { precision: 12, scale: 2 }).default("0.00"),
+  grandTotal: numeric("grand_total", { precision: 12, scale: 2 }).default("0.00"),
+  advancePayment: numeric("advance_payment", { precision: 12, scale: 2 }).default("0.00"),
+  dueAmount: numeric("due_amount", { precision: 12, scale: 2 }).default("0.00"),
+  paymentMethod: varchar("payment_method", { length: 50 }).default("Cash"),
+  paymentStatus: varchar("payment_status", { length: 50 }).default("Paid"), // 'Paid', 'Partial', 'Due'
+  diagnosis: varchar("diagnosis", { length: 1000 }),
+  notes: varchar("notes", { length: 1000 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 19. Diagnostic Orders & Investigation History
+export const diagnosticOrders = pgTable("diagnostic_orders", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  orderNo: varchar("order_no", { length: 100 }).unique().notNull(), // e.g. LAB-2026-0001
+  patientId: varchar("patient_id", { length: 64 }).notNull(),
+  patientUniqueId: varchar("patient_unique_id", { length: 64 }),
+  patientName: varchar("patient_name", { length: 255 }).notNull(),
+  patientPhone: varchar("patient_phone", { length: 50 }),
+  testId: varchar("test_id", { length: 64 }),
+  testName: varchar("test_name", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }),
+  price: numeric("price", { precision: 12, scale: 2 }).notNull(),
+  discountAmount: numeric("discount_amount", { precision: 10, scale: 2 }).default("0.00"),
+  finalAmount: numeric("final_amount", { precision: 12, scale: 2 }).notNull(),
+  sampleStatus: varchar("sample_status", { length: 50 }).default("Collected"), // 'Pending', 'Collected', 'Report Ready'
+  deliveryDate: varchar("delivery_date", { length: 50 }),
+  reportUrl: varchar("report_url", { length: 500 }),
+  doctorName: varchar("doctor_name", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 

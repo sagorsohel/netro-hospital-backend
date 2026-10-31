@@ -286,4 +286,43 @@ export const rooms = pgTable("rooms", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// 16. Surgical Operations & Procedures (Section 4.8 Clinical Operations)
+export const operations = pgTable("operations", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }).default("General Surgery"),
+  price: numeric("price", { precision: 12, scale: 2 }).notNull().default("15000.00"),
+  canDiscount: boolean("can_discount").default(true),
+  maxDiscountPercent: numeric("max_discount_percent", { precision: 5, scale: 2 }).default("15.00"),
+  doctorId: varchar("doctor_id", { length: 64 }),
+  doctorName: varchar("doctor_name", { length: 255 }),
+  roomNumber: varchar("room_number", { length: 100 }), // e.g. 'OT-01 (Major Surgical)', 'Minor OT'
+  duration: varchar("duration", { length: 100 }).default("60 mins"),
+  anesthesiaType: varchar("anesthesia_type", { length: 100 }).default("General Anesthesia"),
+  description: varchar("description", { length: 1000 }),
+  status: varchar("status", { length: 50 }).default("Active"), // 'Active', 'Inactive'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 17. Diagnostic & Pathology Tests (Section 4.9 Laboratory & Diagnostics)
+export const diagnosticTests = pgTable("diagnostic_tests", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  code: varchar("code", { length: 50 }),
+  category: varchar("category", { length: 100 }).default("Pathology"),
+  price: numeric("price", { precision: 12, scale: 2 }).notNull().default("500.00"),
+  isDiscountable: boolean("is_discountable").default(true),
+  discountPercent: numeric("discount_percent", { precision: 5, scale: 2 }).default("10.00"), // discount able as percentage
+  roomNumber: varchar("room_number", { length: 100 }), // Optional room number e.g. 'Lab Room 102'
+  sampleType: varchar("sample_type", { length: 100 }).default("Blood"),
+  deliveryTime: varchar("delivery_time", { length: 100 }).default("Same Day (4 Hours)"),
+  normalRange: varchar("normal_range", { length: 500 }),
+  description: varchar("description", { length: 1000 }),
+  status: varchar("status", { length: 50 }).default("Active"), // 'Active', 'Inactive'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+
 

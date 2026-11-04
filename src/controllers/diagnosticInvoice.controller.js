@@ -118,10 +118,15 @@ export const createDiagnosticInvoice = async (req, res, next) => {
       throw ApiError.badRequest("At least one diagnostic test must be added to the invoice.");
     }
 
-    // Calculate subtotal from items
-    const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+    // Calculate subtotal from items (accounting for quantity if present)
+    const calculatedSubtotal = items.reduce(
+      (sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1)),
+      0
+    );
+    const subtotal = body.subtotal !== undefined ? parseFloat(body.subtotal) : calculatedSubtotal;
     const discountAmount = parseFloat(body.discountAmount ?? 0);
-    const grandTotal = Math.max(0, subtotal - discountAmount);
+    const calculatedGrandTotal = Math.max(0, subtotal - discountAmount);
+    const grandTotal = body.grandTotal !== undefined ? parseFloat(body.grandTotal) : calculatedGrandTotal;
     const paidAmount = parseFloat(body.paidAmount ?? grandTotal);
     const dueAmount = Math.max(0, grandTotal - paidAmount);
 
@@ -135,6 +140,10 @@ export const createDiagnosticInvoice = async (req, res, next) => {
     // 4. Generate unique Invoice Number
     const invoiceNo = await generateUniqueLabInvoiceNo();
     const invoiceId = generateId("lab_inv");
+    const totalQuantity = items.reduce(
+      (sum, item) => sum + (parseInt(item.quantity) || 1),
+      0
+    );
 
     const newInvoice = {
       id: invoiceId,
@@ -148,7 +157,7 @@ export const createDiagnosticInvoice = async (req, res, next) => {
       doctorId,
       doctorName,
       items,
-      testsCount: items.length,
+      testsCount: totalQuantity,
       subtotal: subtotal.toFixed(2),
       discountAmount: discountAmount.toFixed(2),
       grandTotal: grandTotal.toFixed(2),
@@ -172,8 +181,11 @@ export const createDiagnosticInvoice = async (req, res, next) => {
     for (let i = 0; i < items.length; i++) {
       const t = items[i];
       const orderNo = items.length === 1 ? invoiceNo : `${invoiceNo}-${i + 1}`;
-      const itemFinal = parseFloat(t.finalAmount ?? t.price ?? 0);
+      const qty = parseInt(t.quantity) || 1;
+      const unitPrice = parseFloat(t.price || 0);
+      const lineGross = unitPrice * qty;
       const itemDiscount = parseFloat(t.discountAmount ?? 0);
+      const itemFinal = parseFloat(t.finalAmount ?? Math.max(0, lineGross - itemDiscount));
 
       await db.insert(diagnosticOrders).values({
         id: generateId("diag_ord"),
@@ -183,9 +195,9 @@ export const createDiagnosticInvoice = async (req, res, next) => {
         patientName: patientRecord.name,
         patientPhone: patientRecord.phone,
         testId: t.testId || null,
-        testName: t.testName || "Laboratory Test",
+        testName: qty > 1 ? `${t.testName} (Qty: ${qty})` : (t.testName || "Laboratory Test"),
         category: t.category || "Pathology",
-        price: parseFloat(t.price || 0).toFixed(2),
+        price: lineGross.toFixed(2),
         discountAmount: itemDiscount.toFixed(2),
         finalAmount: itemFinal.toFixed(2),
         sampleStatus: body.sampleStatus || "Collected",

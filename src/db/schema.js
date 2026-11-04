@@ -401,5 +401,33 @@ export const diagnosticOrders = pgTable("diagnostic_orders", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// 20. Diagnostic Invoices & POS Billing
+export const diagnosticInvoices = pgTable("diagnostic_invoices", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  invoiceNo: varchar("invoice_no", { length: 100 }).unique().notNull(), // e.g. LAB-2026-0004
+  patientId: varchar("patient_id", { length: 64 }).notNull(),
+  patientUniqueId: varchar("patient_unique_id", { length: 64 }),
+  patientName: varchar("patient_name", { length: 255 }).notNull(),
+  patientPhone: varchar("patient_phone", { length: 50 }),
+  patientAge: integer("patient_age"),
+  patientGender: varchar("patient_gender", { length: 20 }),
+  doctorId: varchar("doctor_id", { length: 64 }),
+  doctorName: varchar("doctor_name", { length: 255 }),
+  items: jsonb("items").notNull().default([]), // [{ testId, testName, category, price, discountPercent, discountAmount, finalAmount, deliveryDate, roomNumber, sampleType }]
+  testsCount: integer("tests_count").default(1),
+  subtotal: numeric("subtotal", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  discountAmount: numeric("discount_amount", { precision: 12, scale: 2 }).default("0.00"),
+  grandTotal: numeric("grand_total", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  paidAmount: numeric("paid_amount", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  dueAmount: numeric("due_amount", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  paymentMethod: varchar("payment_method", { length: 50 }).default("Cash"),
+  paymentStatus: varchar("payment_status", { length: 50 }).default("Paid"), // 'Paid', 'Partial', 'Due'
+  sampleStatus: varchar("sample_status", { length: 50 }).default("Collected"), // 'Pending', 'Collected', 'Processing', 'Report Ready'
+  deliveryDate: varchar("delivery_date", { length: 100 }),
+  notes: varchar("notes", { length: 1000 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 
 

@@ -13,6 +13,7 @@ import operationRoutes from "./operation.routes.js";
 import testRoutes from "./test.routes.js";
 import patientRoutes from "./patient.routes.js";
 import admissionRoutes from "./admission.routes.js";
+import diagnosticInvoiceRoutes from "./diagnosticInvoice.routes.js";
 
 // API v1 — mounted at /api/v1 in app.js
 const router = Router();
@@ -29,6 +30,7 @@ router.use("/operations", operationRoutes);
 router.use("/tests", testRoutes);
 router.use("/patients", patientRoutes);
 router.use("/admissions", admissionRoutes);
+router.use("/diagnostic-invoices", diagnosticInvoiceRoutes);
 router.use("/upload", uploadRoutes);
 
 export default router;

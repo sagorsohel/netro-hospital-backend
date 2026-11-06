@@ -1,5 +1,5 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "./schema.js";
 import dotenv from "dotenv";
 
@@ -11,6 +11,12 @@ if (!connectionString) {
   console.error("❌ DATABASE_URL is not set in environment variables!");
 }
 
-const sql = neon(connectionString);
-export const db = drizzle(sql, { schema });
+export const client = postgres(connectionString, {
+  ssl: "require",
+  max: 10,
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
+
+export const db = drizzle(client, { schema });
 export { schema };

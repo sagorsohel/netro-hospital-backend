@@ -29,19 +29,22 @@ export const seedDatabase = async () => {
   const upsertRecords = async (table, items, name, keyCol = null, keyProp = "id") => {
     let inserted = 0;
     let updated = 0;
-    const col = keyCol || table.id;
     for (const item of items) {
-      const val = item[keyProp];
-      const existing = await db.select().from(table).where(eq(col, val));
+      // 1. Check by primary id first
+      let existing = await db.select().from(table).where(eq(table.id, item.id));
+
+      // 2. If not found by id and a secondary unique key was provided, check it
+      if (existing.length === 0 && keyCol && item[keyProp] !== undefined) {
+        existing = await db.select().from(table).where(eq(keyCol, item[keyProp]));
+      }
+
       if (existing.length === 0) {
         await db.insert(table).values(item);
         inserted++;
       } else {
-        const updateData = { ...item };
-        if (existing[0]?.id) {
-          updateData.id = existing[0].id;
-        }
-        await db.update(table).set(updateData).where(eq(col, val));
+        const targetId = existing[0].id;
+        const updateData = { ...item, id: targetId };
+        await db.update(table).set(updateData).where(eq(table.id, targetId));
         updated++;
       }
     }
@@ -1560,7 +1563,7 @@ export const seedDatabase = async () => {
       status: "Active",
     },
     {
-      id: "dept-5",
+      id: "dept-6",
       name: "Diagnostic & Radiology",
       slug: "radiology",
       description: "High-resolution OCT, visual field perimetry, digital X-Ray, ultrasound, and full clinical laboratory.",

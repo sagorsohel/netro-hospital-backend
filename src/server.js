@@ -1,3 +1,6 @@
+import dns from "node:dns";
+dns.setDefaultResultOrder("ipv4first");
+
 // Load environment variables before any other module reads process.env
 import "dotenv/config";
 

@@ -14,8 +14,10 @@ if (!connectionString) {
   console.error("❌ DATABASE_URL is not set in environment variables!");
 }
 
+const isLocal = connectionString?.includes("localhost") || connectionString?.includes("127.0.0.1");
+
 export const client = postgres(connectionString, {
-  ssl: "require",
+  ssl: isLocal ? false : "require",
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,

@@ -13,6 +13,17 @@ export const seedDatabase = async () => {
   // 2. Seed Users
   const seedUsers = [
     {
+      id: "usr-admin-gmail",
+      name: "Admin / Super Admin",
+      email: "admin@gmail.com",
+      password: defaultPassword,
+      role: "admin",
+      branchName: "Netro Central Hospital",
+      phone: "+8801700000000",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+      isActive: true,
+    },
+    {
       id: "usr-admin-1",
       name: "Dr. Sohel Sagor (Hospital Director)",
       email: "admin@netro.com",

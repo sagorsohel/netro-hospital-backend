@@ -6,6 +6,7 @@ import {
   boolean,
   timestamp,
   jsonb,
+  text,
 } from "drizzle-orm/pg-core";
 
 // 1. Users table (Admins, Pharmacists, Doctors, Staff)

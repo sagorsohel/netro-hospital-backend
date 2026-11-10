@@ -369,3 +369,53 @@ export const settleDiagnosticDue = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @desc Update Diagnostic Sample & Test Processing Status (Lab Workstation & Barcode scanning)
+ * @route PATCH /api/v1/diagnostic-invoices/:id/status
+ * @access Private
+ */
+export const updateDiagnosticSampleStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { sampleStatus, itemIndex, itemStatus } = req.body;
+
+    const [existing] = await db
+      .select()
+      .from(diagnosticInvoices)
+      .where(or(eq(diagnosticInvoices.id, id), eq(diagnosticInvoices.invoiceNo, id)))
+      .limit(1);
+
+    if (!existing) {
+      throw ApiError.notFound(`Diagnostic invoice "${id}" not found`);
+    }
+
+    let updatedItems = existing.items;
+    if (Array.isArray(updatedItems) && itemIndex !== undefined && itemStatus) {
+      updatedItems = updatedItems.map((item, idx) => {
+        if (idx === itemIndex) {
+          return { ...item, status: itemStatus };
+        }
+        return item;
+      });
+    }
+
+    const [updated] = await db
+      .update(diagnosticInvoices)
+      .set({
+        ...(sampleStatus && { sampleStatus }),
+        ...(updatedItems && { items: updatedItems }),
+        updatedAt: new Date(),
+      })
+      .where(eq(diagnosticInvoices.id, existing.id))
+      .returning();
+
+    res.status(200).json({
+      success: true,
+      message: `Diagnostic sample status updated to ${sampleStatus || itemStatus}`,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

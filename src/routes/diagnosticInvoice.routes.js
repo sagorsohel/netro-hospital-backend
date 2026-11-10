@@ -4,6 +4,7 @@ import {
   getDiagnosticInvoices,
   getDiagnosticInvoiceById,
   settleDiagnosticDue,
+  updateDiagnosticSampleStatus,
 } from "../controllers/diagnosticInvoice.controller.js";
 import { verifyToken } from "../middleware/auth.js";
 
@@ -20,5 +21,8 @@ router.post("/", verifyToken, createDiagnosticInvoice);
 
 // Settle due payment
 router.patch("/:id/due", verifyToken, settleDiagnosticDue);
+
+// Update lab/sample processing status (Pending -> Processing -> Report Ready)
+router.patch("/:id/status", verifyToken, updateDiagnosticSampleStatus);
 
 export default router;

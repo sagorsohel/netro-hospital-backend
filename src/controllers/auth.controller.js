@@ -174,3 +174,130 @@ export const changePassword = async (req, res, next) => {
     next(error);
   }
 };
+
+// 5. Get All Users (Super Admin & Admin only)
+export const getUsers = async (req, res, next) => {
+  try {
+    const list = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        branchName: users.branchName,
+        phone: users.phone,
+        avatar: users.avatar,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+      })
+      .from(users);
+
+    res.json({
+      success: true,
+      data: list,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 6. Create User with Role (Admin only)
+export const createUser = async (req, res, next) => {
+  try {
+    const { name, email, password, role, phone, branchName } = req.body;
+
+    const [existing] = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim()));
+    if (existing) {
+      return res.status(409).json({ success: false, message: "Email is already registered." });
+    }
+
+    const hashedPassword = await bcrypt.hash(password || "Hospital@123", 10);
+    const userId = `usr-${Date.now()}`;
+
+    const [created] = await db
+      .insert(users)
+      .values({
+        id: userId,
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        password: hashedPassword,
+        role: role || "receptionist",
+        phone: phone || null,
+        branchName: branchName || "Main Hospital",
+        isActive: true,
+      })
+      .returning({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        branchName: users.branchName,
+        phone: users.phone,
+        isActive: users.isActive,
+      });
+
+    res.status(201).json({
+      success: true,
+      message: `User created with role: ${created.role}`,
+      data: created,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 7. Update User Role & Status (Admin only)
+export const updateUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role, isActive, name, phone, branchName } = req.body;
+
+    const updateData = {};
+    if (role !== undefined) updateData.role = role;
+    if (isActive !== undefined) updateData.isActive = isActive;
+    if (name !== undefined) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (branchName !== undefined) updateData.branchName = branchName;
+    updateData.updatedAt = new Date();
+
+    const [updated] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, id))
+      .returning({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        branchName: users.branchName,
+        phone: users.phone,
+        isActive: users.isActive,
+      });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    res.json({
+      success: true,
+      message: "User updated successfully.",
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 8. Delete User (Admin only)
+export const deleteUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const [deleted] = await db.delete(users).where(eq(users.id, id)).returning();
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+    res.json({ success: true, message: "User deleted successfully." });
+  } catch (error) {
+    next(error);
+  }
+};

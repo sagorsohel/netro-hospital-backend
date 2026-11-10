@@ -444,5 +444,37 @@ export const diagnosticInvoices = pgTable("diagnostic_invoices", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// 21. Shareholders table (Ownership & Dividend Tracking - Section 4.7)
+export const shareholders = pgTable("shareholders", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  nid: varchar("nid", { length: 50 }),
+  ownershipPercentage: numeric("ownership_percentage", { precision: 5, scale: 2 }).notNull(), // e.g. 15.00%
+  investmentAmount: numeric("investment_amount", { precision: 12, scale: 2 }).default("0.00"),
+  joinedDate: varchar("joined_date", { length: 50 }),
+  bankAccountDetails: varchar("bank_account_details", { length: 500 }),
+  status: varchar("status", { length: 50 }).default("Active"), // 'Active', 'Inactive'
+  notes: varchar("notes", { length: 1000 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 22. Shareholder Dividends & Payouts
+export const shareholderPayouts = pgTable("shareholder_payouts", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  shareholderId: varchar("shareholder_id", { length: 64 }).notNull(),
+  shareholderName: varchar("shareholder_name", { length: 255 }).notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  period: varchar("period", { length: 100 }).notNull(), // e.g. 'November 2026', 'Q3 2026'
+  paymentDate: varchar("payment_date", { length: 50 }).notNull(),
+  paymentMethod: varchar("payment_method", { length: 50 }).default("Bank Transfer"),
+  transactionRef: varchar("transaction_ref", { length: 100 }),
+  status: varchar("status", { length: 50 }).default("Paid"), // 'Paid', 'Pending'
+  notes: varchar("notes", { length: 500 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 
 

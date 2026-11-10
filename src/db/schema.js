@@ -76,18 +76,33 @@ export const patients = pgTable("patients", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// 4. Appointments table
+// 4. Appointments table (Doctor Serials & Queue)
 export const appointments = pgTable("appointments", {
   id: varchar("id", { length: 64 }).primaryKey(),
+  tokenNo: varchar("token_no", { length: 100 }), // e.g. SRL-20261111-001
+  serialNumber: integer("serial_number"), // e.g. 1, 2, 3...
   patientId: varchar("patient_id", { length: 64 }),
   patientName: varchar("patient_name", { length: 255 }).notNull(),
+  patientPhone: varchar("patient_phone", { length: 50 }),
+  patientAge: integer("patient_age"),
+  patientGender: varchar("patient_gender", { length: 20 }),
   doctorId: varchar("doctor_id", { length: 64 }),
   doctorName: varchar("doctor_name", { length: 255 }).notNull(),
+  department: varchar("department", { length: 255 }),
+  roomNumber: varchar("room_number", { length: 100 }),
   date: varchar("date", { length: 50 }).notNull(),
   time: varchar("time", { length: 50 }).notNull(),
-  status: varchar("status", { length: 50 }).default("Pending"), // 'Confirmed', 'Pending', 'Completed', 'Cancelled'
-  type: varchar("type", { length: 100 }).default("Consultation"),
+  status: varchar("status", { length: 50 }).default("Waiting"), // 'Waiting', 'In Consultation', 'Completed', 'Cancelled'
+  type: varchar("type", { length: 100 }).default("First Visit"), // 'First Visit', 'Follow-up', 'Report Show', 'Emergency'
+  fee: numeric("fee", { precision: 10, scale: 2 }).default("1000.00"),
+  discount: numeric("discount", { precision: 10, scale: 2 }).default("0.00"),
+  paidAmount: numeric("paid_amount", { precision: 10, scale: 2 }).default("1000.00"),
+  dueAmount: numeric("due_amount", { precision: 10, scale: 2 }).default("0.00"),
+  paymentStatus: varchar("payment_status", { length: 50 }).default("Paid"), // 'Paid', 'Unpaid', 'Partial'
+  paymentMethod: varchar("payment_method", { length: 50 }).default("Cash"),
+  symptoms: text("symptoms"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // 5. Medicines table (Pharmacy multi-unit stock)

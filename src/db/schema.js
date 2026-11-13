@@ -7,6 +7,7 @@ import {
   timestamp,
   jsonb,
   text,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // 1. Users table (Admins, Pharmacists, Doctors, Staff)
@@ -479,3 +480,40 @@ export const shareholderPayouts = pgTable("shareholder_payouts", {
 
 
 
+// 23. Pharmacies (independent pharmacy outlets created by hospital admins)
+// `id` is a sequential numeric pharmacy code starting at 1001
+export const pharmacies = pgTable("pharmacies", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity({ startWith: 1001 }),
+  name: varchar("name", { length: 255 }).notNull(),
+  address: varchar("address", { length: 500 }).notNull(),
+  phone: varchar("phone", { length: 50 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  licenseNo: varchar("license_no", { length: 100 }).notNull().unique(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: varchar("created_by", { length: 64 }), // hospital admin user id
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 24. Pharmacy Users (separate auth system from hospital `users`)
+// Roles: 'owner', 'manager', 'pharmacist', 'cashier', 'staff'
+// Phone is unique per pharmacy, so one person can work at several pharmacies
+export const pharmacyUsers = pgTable(
+  "pharmacy_users",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    pharmacyId: integer("pharmacy_id")
+      .notNull()
+      .references(() => pharmacies.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    phone: varchar("phone", { length: 50 }).notNull(),
+    email: varchar("email", { length: 255 }),
+    password: varchar("password", { length: 255 }).notNull(),
+    role: varchar("role", { length: 50 }).notNull().default("staff"),
+    isActive: boolean("is_active").notNull().default(true),
+    lastLoginAt: timestamp("last_login_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [uniqueIndex("pharmacy_users_pharmacy_phone_idx").on(table.pharmacyId, table.phone)]
+);

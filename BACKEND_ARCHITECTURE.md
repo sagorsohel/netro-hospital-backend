@@ -126,6 +126,8 @@ All database entities are defined with Drizzle ORM in [src/db/schema.js](file://
 | **`appointments`** | `id` (varchar 64) | OPD appointments. Columns: `patientId`, `patientName`, `doctorId`, `doctorName`, `date`, `time`, `status`, `type`. |
 | **`medicines`** | `id` (varchar 64) | Pharmacy stock with multi-unit packaging. Columns: `name`, `generic`, `category`, `cartonQty`, `packetPerCarton`, `piecePerPacket`, `totalPieces`, `unitSellingPrice`, `stripSellingPrice`, `batchNo`, `expiryDate`. |
 | **`pharmacy_invoices`**| `id` (varchar 64) | POS pharmacy billing. Columns: `invoiceNo`, `customerName`, `phone`, `subtotal`, `discountAmount`, `grandTotal`, `items` (jsonb). |
+| **`pharmacies`** | `id` (integer identity, starts at **1001**) | Independent pharmacy outlets created by hospital admins. The numeric `id` is the pharmacy code used at login. Columns: `name`, `address`, `phone`, `email`, `licenseNo` (unique), `isActive`, `createdBy` (admin user id). |
+| **`pharmacy_users`** | `id` (varchar 64) | Pharmacy-side accounts, **separate from hospital `users`**. Columns: `pharmacyId` (FK → `pharmacies.id`, cascade), `name`, `phone` (unique **per pharmacy**), `email`, `password` (bcrypt), `role` (`owner`, `manager`, `pharmacist`, `cashier`, `staff`), `isActive`, `lastLoginAt`. |
 
 ---
 
@@ -205,6 +207,58 @@ Both `/api/v1` and `/api` (legacy backward compatibility) point to the same rout
 | :--- | :--- | :--- | :--- | :--- |
 | `POST` | `/upload/image` | Authenticated | `file` or `image` (multipart), `folder` (string) | Streams buffer to Cloudinary CDN, returns secure CDN URL, filename, and mime type. |
 
+
+### 4.8 Pharmacy System (`/pharmacies`, `/pharmacy-auth`)
+
+Independent pharmacies with their own authentication, separate from hospital `users`.
+
+- **Pharmacy ID:** sequential integer starting at `1001`.
+- **Login:** `pharmacyId` + `phone` + `password`. Pharmacy JWTs carry `scope: "pharmacy"`; they are rejected by every hospital endpoint, and hospital tokens are rejected by `/pharmacy-auth/*`.
+- **Registration:** no public sign-up. A hospital admin creates the pharmacy together with its first `owner`; owners/managers add the rest of the staff.
+- **Hospital admins** have full access to every pharmacy's endpoints.
+- **Deactivating** a pharmacy or user blocks login and invalidates existing tokens immediately (checked on every request).
+
+**Role permissions (staff management)**
+
+| Actor | Can create / edit / delete / reset password for | Notes |
+| :--- | :--- | :--- |
+| Hospital `admin` | Any role, incl. `owner` | Any pharmacy. |
+| `owner` | `manager`, `pharmacist`, `cashier`, `staff` | Own pharmacy only. |
+| `manager` | `pharmacist`, `cashier`, `staff` | Own pharmacy only. |
+| `pharmacist`, `cashier`, `staff` | — | Self-service only (`/pharmacy-auth/me`, `change-password`). |
+
+Users may edit their own name/phone/email via `PUT /users/:userId` but cannot change their own role/status or delete themselves. A pharmacy must always keep at least one active owner.
+
+**Admin — pharmacy registry** (hospital `admin` token)
+
+| Method | Endpoint | Validator | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/pharmacies` | `createPharmacySchema` | Create pharmacy + owner (`owner: { name, phone, email?, password }`) in one transaction. |
+| `GET` | `/pharmacies` | `listPharmaciesQuerySchema` | List with `search` (name / license / phone / exact ID), `isActive`, pagination. Includes `userCount`. |
+| `GET` | `/pharmacies/:pharmacyId` | - | Details + `owners` + `staffByRole` counts. |
+| `PUT` | `/pharmacies/:pharmacyId` | `updatePharmacySchema` | Update name, address, phone, email, licenseNo. |
+| `PATCH` | `/pharmacies/:pharmacyId/status` | `pharmacyStatusSchema` | `{ isActive }` — activate / deactivate. |
+| `POST` | `/pharmacies/:pharmacyId/reset-owner-password` | `resetPasswordSchema` | Reset the (oldest) owner's password. |
+
+**Pharmacy auth**
+
+| Method | Endpoint | Access | Validator | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/pharmacy-auth/login` | Public | `pharmacyLoginSchema` | Returns JWT + `user` + `pharmacy`. |
+| `GET` | `/pharmacy-auth/me` | Pharmacy token | - | Current user and their pharmacy. |
+| `POST` | `/pharmacy-auth/change-password` | Pharmacy token | `pharmacyChangePasswordSchema` | Change own password. |
+
+**Pharmacy users** (`owner` / `manager` of that pharmacy, or hospital `admin`)
+
+| Method | Endpoint | Validator | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/pharmacies/:pharmacyId/users` | `listPharmacyUsersQuerySchema` | List with `search`, `role`, `isActive`, pagination. |
+| `POST` | `/pharmacies/:pharmacyId/users` | `createPharmacyUserSchema` | Add user (`role` defaults to `staff`). |
+| `GET` | `/pharmacies/:pharmacyId/users/:userId` | - | Get user. |
+| `PUT` | `/pharmacies/:pharmacyId/users/:userId` | `updatePharmacyUserSchema` | Update name, phone, email, role, isActive. |
+| `POST` | `/pharmacies/:pharmacyId/users/:userId/reset-password` | `resetPasswordSchema` | Reset another user's password. |
+| `DELETE` | `/pharmacies/:pharmacyId/users/:userId` | - | Remove user. |
+
 ---
 
 ## 5. Client Redux Toolkit Query Mapping (`netro-management-system`)
@@ -250,3 +304,19 @@ Seeded via [src/db/seed.js](file:///d:/Eterces/Ongoging/netro-hospital/netro-bac
    - **Email:** `pharmarcy@netro.com`
    - **Password:** `12345678`
    - **Role:** `pharmacist`
+
+4. **Pharmacy users** (separate pharmacy login: `POST /pharmacy-auth/login`, password `12345678` for all):
+
+   | Pharmacy | Phone | Role |
+   | :--- | :--- | :--- |
+   | `1001` Netro Care Pharmacy | `01711000001` | `owner` |
+   | `1001` | `01711000002` | `manager` |
+   | `1001` | `01711000003` | `pharmacist` |
+   | `1001` | `01711000004` | `cashier` |
+   | `1001` | `01711000005` | `staff` |
+   | `1002` Netro Health Pharmacy | `01811000001` | `owner` |
+   | `1002` | `01811000002` | `pharmacist` |
+   | `1002` | `01811000003` | `cashier` |
+   | `1002` | `01811000004` | `staff` |
+
+   IDs assume a fresh database (the identity sequence starts at 1001).

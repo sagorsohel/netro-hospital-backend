@@ -25,6 +25,21 @@
       "key": "pharmaToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "pharmacyId",
+      "value": "1001",
+      "type": "string"
+    },
+    {
+      "key": "pharmacyToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "pharmacyUserId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -602,6 +617,453 @@
               "path": ["api", "v1", "health"]
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "05. Pharmacy System (Multi-Pharmacy)",
+      "description": "Independent pharmacies with their own auth. Hospital admins create pharmacies (sequential IDs from 1001) and their owner. Pharmacy users log in with pharmacyId + phone + password. Roles: owner, manager, pharmacist, cashier, staff. Pharmacy tokens cannot call hospital APIs; hospital admin tokens have full access to every pharmacy.",
+      "item": [
+        {
+          "name": "Admin - Pharmacy Registry",
+          "item": [
+            {
+              "name": "Create Pharmacy + Owner",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies"]
+                },
+                "description": "Creates a pharmacy and its first owner account in one transaction. Saves the new ID to {{pharmacyId}}.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Netro Lifecare Pharmacy\",\n  \"address\": \"Road 11, Banani, Dhaka\",\n  \"phone\": \"+8801911000001\",\n  \"email\": \"banani@netropharmacy.com\",\n  \"licenseNo\": \"DGDA-PH-2026-0003\",\n  \"owner\": {\n    \"name\": \"Arif Hasan\",\n    \"phone\": \"01911000001\",\n    \"email\": \"\",\n    \"password\": \"12345678\"\n  }\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["const res = pm.response.json();", "if (res.data && res.data.id) pm.collectionVariables.set('pharmacyId', res.data.id);"]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "List Pharmacies",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies?search=&isActive=&page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies"],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": ""
+                    },
+                    {
+                      "key": "isActive",
+                      "value": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                },
+                "description": "search matches name, license no, phone, or exact numeric ID. isActive=true|false."
+              }
+            },
+            {
+              "name": "Get Pharmacy",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies/{{pharmacyId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies", "{{pharmacyId}}"]
+                },
+                "description": "Includes owners and staff counts by role."
+              }
+            },
+            {
+              "name": "Update Pharmacy",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies/{{pharmacyId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies", "{{pharmacyId}}"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"address\": \"Road 12, Banani, Dhaka\",\n  \"phone\": \"+8801911000009\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Activate / Deactivate Pharmacy",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies/{{pharmacyId}}/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies", "{{pharmacyId}}", "status"]
+                },
+                "description": "Deactivated pharmacies cannot log in and existing tokens stop working.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}"
+                }
+              }
+            },
+            {
+              "name": "Reset Owner Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{adminToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies/{{pharmacyId}}/reset-owner-password",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies", "{{pharmacyId}}", "reset-owner-password"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newPassword\": \"12345678\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pharmacy Auth",
+          "item": [
+            {
+              "name": "Pharmacy Login - Owner",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacy-auth/login",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacy-auth", "login"]
+                },
+                "description": "Seeded owner of pharmacy #1001. Saves the token to {{pharmacyToken}}.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pharmacyId\": 1001,\n  \"phone\": \"01711000001\",\n  \"password\": \"12345678\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["const res = pm.response.json();", "if (res.token) pm.collectionVariables.set('pharmacyToken', res.token);"]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Pharmacy Login - Manager",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacy-auth/login",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacy-auth", "login"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pharmacyId\": 1001,\n  \"phone\": \"01711000002\",\n  \"password\": \"12345678\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["const res = pm.response.json();", "if (res.token) pm.collectionVariables.set('pharmacyToken', res.token);"]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Me",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pharmacyToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacy-auth/me",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacy-auth", "me"]
+                }
+              }
+            },
+            {
+              "name": "Change My Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pharmacyToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacy-auth/change-password",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacy-auth", "change-password"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"12345678\",\n  \"newPassword\": \"12345678\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pharmacy Users (Owner / Manager / Admin)",
+          "item": [
+            {
+              "name": "List Users",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pharmacyToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies/{{pharmacyId}}/users?search=&role=&isActive=&page=1&limit=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies", "{{pharmacyId}}", "users"],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": ""
+                    },
+                    {
+                      "key": "role",
+                      "value": ""
+                    },
+                    {
+                      "key": "isActive",
+                      "value": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Add User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pharmacyToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies/{{pharmacyId}}/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies", "{{pharmacyId}}", "users"]
+                },
+                "description": "Owner can add manager/pharmacist/cashier/staff. Manager can add pharmacist/cashier/staff. Only hospital admins can add owners.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"New Staff\",\n  \"phone\": \"01711000099\",\n  \"email\": \"\",\n  \"password\": \"12345678\",\n  \"role\": \"staff\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["const res = pm.response.json();", "if (res.data && res.data.id) pm.collectionVariables.set('pharmacyUserId', res.data.id);"]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get User",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pharmacyToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies/{{pharmacyId}}/users/{{pharmacyUserId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies", "{{pharmacyId}}", "users", "{{pharmacyUserId}}"]
+                }
+              }
+            },
+            {
+              "name": "Update User (role / status / profile)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pharmacyToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies/{{pharmacyId}}/users/{{pharmacyUserId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies", "{{pharmacyId}}", "users", "{{pharmacyUserId}}"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"role\": \"cashier\",\n  \"isActive\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "Reset User Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pharmacyToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies/{{pharmacyId}}/users/{{pharmacyUserId}}/reset-password",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies", "{{pharmacyId}}", "users", "{{pharmacyUserId}}", "reset-password"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newPassword\": \"12345678\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete User",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{pharmacyToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/pharmacies/{{pharmacyId}}/users/{{pharmacyUserId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "pharmacies", "{{pharmacyId}}", "users", "{{pharmacyUserId}}"]
+                }
+              }
+            }
+          ]
         }
       ]
     }

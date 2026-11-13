@@ -27,6 +27,14 @@ export const verifyToken = async (req, res, next) => {
       process.env.JWT_SECRET || "netro_hospital_jwt_super_secret_key_2026_secure"
     );
 
+    // Pharmacy-system tokens are not valid for hospital APIs
+    if (decoded.scope === "pharmacy") {
+      return res.status(401).json({
+        success: false,
+        message: "Pharmacy tokens cannot access hospital resources.",
+      });
+    }
+
     // Fetch fresh user from DB to verify active status
     const [user] = await db
       .select({

@@ -66,3 +66,4 @@ Both `/api/v1` and `/api` (legacy backward compatibility) are supported:
 ## 🔑 Pre-Configured Seed Logins
 - **Admin:** `admin@netro.com` / `12345678`
 - **Pharmacist:** `pharmacy@netro.com` / `12345678`
+- **Pharmacy owner (pharmacy system):** pharmacy ID `1001`, phone `01711000001` / `12345678` via `POST /api/v1/pharmacy-auth/login` (see BACKEND_ARCHITECTURE.md §4.8)

@@ -16,8 +16,10 @@ import {
   expenses,
   staff,
   equipment,
+  pharmacies,
+  pharmacyUsers,
 } from "./schema.js";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export const seedDatabase = async () => {
   console.log("🌱 Starting Comprehensive Database Seeding (5+ items per module)...");
@@ -1579,6 +1581,65 @@ export const seedDatabase = async () => {
     },
   ];
   await upsertRecords(departments, seedDepartments, "Departments", departments.slug, "slug");
+
+  // 16. Seed Pharmacies + Pharmacy Users (separate auth system)
+  // Pharmacy IDs come from the identity sequence (1001, 1002, ...), so match on licenseNo
+  const seedPharmacies = [
+    {
+      name: "Netro Care Pharmacy",
+      address: "House 12, Road 5, Dhanmondi, Dhaka",
+      phone: "+8801711000001",
+      email: "dhanmondi@netropharmacy.com",
+      licenseNo: "DGDA-PH-2026-0001",
+      users: [
+        { name: "Rahim Uddin", phone: "01711000001", role: "owner" },
+        { name: "Karim Hossain", phone: "01711000002", role: "manager" },
+        { name: "Nusrat Jahan", phone: "01711000003", role: "pharmacist" },
+        { name: "Sabbir Ahmed", phone: "01711000004", role: "cashier" },
+        { name: "Jamal Mia", phone: "01711000005", role: "staff" },
+      ],
+    },
+    {
+      name: "Netro Health Pharmacy",
+      address: "Plot 7, Sector 4, Uttara, Dhaka",
+      phone: "+8801811000001",
+      email: "uttara@netropharmacy.com",
+      licenseNo: "DGDA-PH-2026-0002",
+      users: [
+        { name: "Farhana Akter", phone: "01811000001", role: "owner" },
+        { name: "Tanvir Rahman", phone: "01811000002", role: "pharmacist" },
+        { name: "Mitu Begum", phone: "01811000003", role: "cashier" },
+        { name: "Rasel Khan", phone: "01811000004", role: "staff" },
+      ],
+    },
+  ];
+
+  let pharmacyUserCount = 0;
+  for (const { users: pharmacyStaff, ...pharmacyData } of seedPharmacies) {
+    let [pharmacy] = await db.select().from(pharmacies).where(eq(pharmacies.licenseNo, pharmacyData.licenseNo));
+    if (pharmacy) {
+      await db.update(pharmacies).set({ ...pharmacyData, updatedAt: new Date() }).where(eq(pharmacies.id, pharmacy.id));
+    } else {
+      [pharmacy] = await db.insert(pharmacies).values({ ...pharmacyData, createdBy: "usr-admin-gmail" }).returning();
+    }
+
+    for (const member of pharmacyStaff) {
+      const [existing] = await db
+        .select({ id: pharmacyUsers.id })
+        .from(pharmacyUsers)
+        .where(and(eq(pharmacyUsers.pharmacyId, pharmacy.id), eq(pharmacyUsers.phone, member.phone)));
+
+      const record = { ...member, pharmacyId: pharmacy.id, password: defaultPassword, isActive: true };
+      if (existing) {
+        await db.update(pharmacyUsers).set({ ...record, updatedAt: new Date() }).where(eq(pharmacyUsers.id, existing.id));
+      } else {
+        await db.insert(pharmacyUsers).values({ ...record, id: `phu-${pharmacy.id}-${member.phone}` });
+      }
+      pharmacyUserCount++;
+    }
+    console.log(`✅ Pharmacy #${pharmacy.id} (${pharmacy.name}) seeded with ${pharmacyStaff.length} users`);
+  }
+  console.log(`✅ Pharmacies: ${seedPharmacies.length}, Pharmacy users: ${pharmacyUserCount} (password: 12345678)`);
 
   console.log("🎉 Database Seeding Completed Successfully! All 15 modules seeded with 5+ items.");
 };

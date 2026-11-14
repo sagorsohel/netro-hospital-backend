@@ -264,3 +264,4 @@ export const deletePharmacyCustomer = async (req, res, next) => {
     next(error);
   }
 };
+

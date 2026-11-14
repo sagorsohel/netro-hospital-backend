@@ -23,3 +23,4 @@ router.route("/:id")
   .delete(deletePharmacyCustomer);
 
 export default router;
+

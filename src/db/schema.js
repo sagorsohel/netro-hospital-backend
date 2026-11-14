@@ -517,3 +517,31 @@ export const pharmacyUsers = pgTable(
   },
   (table) => [uniqueIndex("pharmacy_users_pharmacy_phone_idx").on(table.pharmacyId, table.phone)]
 );
+
+// 25. Pharmacy Customers (strictly scoped per pharmacy outlet - isolated from others)
+export const pharmacyCustomers = pgTable(
+  "pharmacy_customers",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    pharmacyId: integer("pharmacy_id")
+      .notNull()
+      .references(() => pharmacies.id, { onDelete: "cascade" }),
+    customerCode: varchar("customer_code", { length: 64 }), // e.g. C-1001, CUST-1001-001
+    name: varchar("name", { length: 255 }).notNull(),
+    phone: varchar("phone", { length: 50 }).notNull(),
+    email: varchar("email", { length: 255 }),
+    age: integer("age"),
+    gender: varchar("gender", { length: 20 }).default("Male"),
+    bloodGroup: varchar("blood_group", { length: 10 }),
+    address: varchar("address", { length: 500 }),
+    refDoctor: varchar("ref_doctor", { length: 255 }),
+    totalOrders: integer("total_orders").default(0),
+    totalSpent: numeric("total_spent", { precision: 12, scale: 2 }).default("0.00"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("pharmacy_customers_pharmacy_phone_idx").on(table.pharmacyId, table.phone),
+  ]
+);

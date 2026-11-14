@@ -12,3 +12,4 @@ router.post("/", createPharmacyInvoice);
 router.get("/:id", getPharmacyInvoiceById);
 
 export default router;
+

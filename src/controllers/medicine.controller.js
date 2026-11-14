@@ -180,3 +180,4 @@ export const deleteMedicine = async (req, res, next) => {
     next(error);
   }
 };
+

@@ -21,6 +21,7 @@ import pharmacyUserRoutes from "./pharmacyUser.routes.js";
 import pharmacyAuthRoutes from "./pharmacyAuth.routes.js";
 import medicineRoutes from "./medicine.routes.js";
 import pharmacyInvoiceRoutes from "./pharmacyInvoice.routes.js";
+import pharmacyCustomerRoutes from "./pharmacyCustomer.routes.js";
 
 // API v1 — mounted at /api/v1 in app.js
 const router = Router();
@@ -45,6 +46,8 @@ router.use("/shareholders", shareholderRoutes);
 // Pharmacy system (separate auth from hospital users)
 router.use("/pharmacy-auth", pharmacyAuthRoutes);
 router.use("/pharmacies/:pharmacyId/users", pharmacyUserRoutes); // before /pharmacies
+router.use("/pharmacies/:pharmacyId/customers", pharmacyCustomerRoutes);
+router.use("/pharmacy-customers", pharmacyCustomerRoutes);
 router.use("/pharmacies", pharmacyRoutes);
 router.use("/medicines", medicineRoutes);
 router.use("/pharmacy-invoices", pharmacyInvoiceRoutes);

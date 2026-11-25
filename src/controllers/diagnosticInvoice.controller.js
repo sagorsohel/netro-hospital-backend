@@ -1,6 +1,6 @@
 import { db } from "../db/index.js";
-import { diagnosticInvoices, diagnosticOrders, patients, doctors } from "../db/schema.js";
-import { eq, ilike, or, desc, sql } from "drizzle-orm";
+import { diagnosticInvoices, diagnosticOrders, patients, doctors, diagnosticTests } from "../db/schema.js";
+import { eq, ilike, or, desc, sql, inArray } from "drizzle-orm";
 import { generateId } from "../utils/generateId.js";
 import { getPagination, buildPaginationMeta } from "../utils/pagination.js";
 import { combineConditions, getQueryString } from "../utils/query.js";
@@ -44,6 +44,43 @@ async function generateUniquePatientId() {
   return `PAT-${currentYear}-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
+async function validateDiscountRules(body) {
+  const items = Array.isArray(body.items) ? body.items : [];
+  const testIds = [...new Set(items.map((i) => i.testId).filter(Boolean))];
+  const testRows = testIds.length
+    ? await db.select().from(diagnosticTests).where(inArray(diagnosticTests.id, testIds))
+    : [];
+  const testMap = new Map(testRows.map((t) => [t.id, t]));
+
+  let maxAllowedTotal = 0;
+  for (const item of items) {
+    const lineGross = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
+    const t = item.testId ? testMap.get(item.testId) : null;
+    const maxPct = t ? (t.isDiscountable ? parseFloat(t.discountPercent) || 0 : 0) : 100;
+    const maxLine = (lineGross * maxPct) / 100;
+    maxAllowedTotal += maxLine;
+
+    const lineDisc = parseFloat(item.discountAmount ?? 0) || 0;
+    if (lineDisc > maxLine + 0.01) {
+      throw ApiError.badRequest(
+        maxPct === 0
+          ? `"${item.testName}" has a fixed price — no discount is allowed.`
+          : `"${item.testName}" allows max ${maxPct}% discount (৳${maxLine.toFixed(2)}), but ৳${lineDisc.toFixed(2)} was given.`
+      );
+    }
+  }
+
+  const totalDiscount = parseFloat(body.discountAmount ?? 0) || 0;
+  if (totalDiscount > maxAllowedTotal + 0.01) {
+    throw ApiError.badRequest(
+      `Total discount ৳${totalDiscount.toFixed(2)} is more than the allowed ৳${maxAllowedTotal.toFixed(2)} for these tests.`
+    );
+  }
+  if (totalDiscount > 0 && String(body.notes || "").trim().length < 5) {
+    throw ApiError.badRequest("A discount note (reason for the discount) is required when a discount is given.");
+  }
+}
+
 /**
  * @desc Create new Diagnostic Order & POS Invoice (auto-create patient if new, multi-test support, discount & due calculation)
  * @route POST /api/v1/diagnostic-invoices
@@ -53,6 +90,11 @@ export const createDiagnosticInvoice = async (req, res, next) => {
   try {
     const body = req.body;
     let patientRecord = null;
+
+    // 0. Discount rules (checked before anything is saved):
+    //    each test's discount can't exceed its max % (tests.discountPercent, 0 if not discountable),
+    //    and a reason note is required whenever a discount is given.
+    await validateDiscountRules(body);
 
     // 1. Patient Intake (Existing vs New Patient Auto-Registration)
     const isNewPatient = body.isNewPatient === true || !body.patientId;

@@ -2,6 +2,7 @@ import express from "express";
 import {
   getAppointments,
   getAppointmentById,
+  getAppointmentByToken,
   createAppointment,
   updateAppointmentStatus,
   deleteAppointment,
@@ -16,6 +17,7 @@ import {
 const router = express.Router();
 
 router.get("/", verifyToken, getAppointments);
+router.get("/token/:tokenNo", verifyToken, getAppointmentByToken);
 router.get("/:id", verifyToken, getAppointmentById);
 router.post("/", verifyToken, validate({ body: createAppointmentSchema }), createAppointment);
 router.patch("/:id/status", verifyToken, validate({ body: updateAppointmentStatusSchema }), updateAppointmentStatus);

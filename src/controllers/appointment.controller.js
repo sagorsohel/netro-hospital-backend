@@ -1,6 +1,6 @@
 import { db } from "../db/index.js";
 import { appointments, doctors, patients } from "../db/schema.js";
-import { eq, ilike, or, and, desc, asc, sql } from "drizzle-orm";
+import { eq, ne, ilike, or, and, desc, asc, sql } from "drizzle-orm";
 import { getPagination, buildPaginationMeta } from "../utils/pagination.js";
 import { combineConditions, getQueryString } from "../utils/query.js";
 import { generateId } from "../utils/generateId.js";
@@ -132,6 +132,31 @@ export const getAppointmentById = async (req, res, next) => {
 };
 
 /**
+ * @desc Look up a serial by scanned barcode (token no) — usable from any module
+ * @route GET /api/v1/appointments/token/:tokenNo
+ * @access Authenticated
+ */
+export const getAppointmentByToken = async (req, res, next) => {
+  try {
+    const code = String(req.params.tokenNo || "").trim();
+    const [appointment] = await db
+      .select()
+      .from(appointments)
+      .where(or(ilike(appointments.tokenNo, code), eq(appointments.id, code)))
+      .orderBy(desc(appointments.createdAt))
+      .limit(1);
+
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: `No serial found for barcode ${code}` });
+    }
+
+    res.json({ success: true, data: appointment });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc Create new doctor serial / appointment
  * @route POST /api/v1/appointments
  * @access Authenticated
@@ -158,11 +183,52 @@ export const createAppointment = async (req, res, next) => {
       assignedSerial = maxNum + 1;
     }
 
+    // Rule: one patient can be booked with only ONE doctor per day (cancelled serials don't count)
+    const phoneDigits = (payload.patientPhone || "").replace(/[^0-9]/g, "").slice(-11);
+    const patientMatch = [];
+    if (payload.patientId) patientMatch.push(eq(appointments.patientId, payload.patientId));
+    if (phoneDigits) {
+      patientMatch.push(
+        and(
+          ilike(appointments.patientPhone, `%${phoneDigits}`),
+          sql`LOWER(TRIM(${appointments.patientName})) = ${payload.patientName.trim().toLowerCase()}`
+        )
+      );
+    }
+    if (patientMatch.length) {
+      const [existing] = await db
+        .select()
+        .from(appointments)
+        .where(
+          and(
+            eq(appointments.date, appointmentDate),
+            ne(appointments.status, "Cancelled"),
+            or(...patientMatch)
+          )
+        )
+        .limit(1);
+
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: `${existing.patientName} is already booked with ${existing.doctorName} on ${appointmentDate} (Serial #${existing.serialNumber}, Token ${existing.tokenNo}). A patient cannot be added to another doctor on the same day — cancel that serial first.`,
+          data: existing,
+        });
+      }
+    }
+
     const id = generateId("apt");
     const dateCompact = appointmentDate.replace(/[^0-9]/g, "");
+    // Hospital-wide unique token per day (used as the barcode): SRL-YYYYMMDD-NNNN
+    const prefix = `SRL-${dateCompact}-`;
+    const [tokenRow] = await db
+      .select({
+        maxSeq: sql`MAX(CAST(SUBSTRING(${appointments.tokenNo} FROM ${prefix.length + 1}) AS INTEGER))`,
+      })
+      .from(appointments)
+      .where(sql`${appointments.tokenNo} ~ ${"^" + prefix + "[0-9]+$"}`);
     const tokenNo =
-      payload.tokenNo ||
-      `SRL-${dateCompact}-${String(assignedSerial).padStart(3, "0")}`;
+      payload.tokenNo || `${prefix}${String((Number(tokenRow?.maxSeq) || 0) + 1).padStart(4, "0")}`;
 
     const newRecord = {
       id,

@@ -5,6 +5,7 @@ import { generateId } from "../utils/generateId.js";
 import { getPagination, buildPaginationMeta } from "../utils/pagination.js";
 import { combineConditions, getQueryString } from "../utils/query.js";
 import { ApiError } from "../utils/ApiError.js";
+import { dateRangeConditions } from "../utils/dateRange.js";
 
 /**
  * Generate unique Admission Number e.g. ADM-2026-0003
@@ -84,12 +85,29 @@ export const getAdmissions = async (req, res, next) => {
       conditions.push(eq(admissions.doctorId, doctorId));
     }
 
+    // Date range (?from=&to=) on admission date
+    conditions.push(...dateRangeConditions(req.query, admissions.admissionDate));
+
     const whereClause = combineConditions(conditions);
 
+    // Count + totals for the whole filtered period (not just this page)
     const [countResult] = await db
-      .select({ count: sql`count(*)` })
+      .select({
+        count: sql`count(*)`,
+        discharged: sql`COUNT(*) FILTER (WHERE ${admissions.status} = 'Discharged')`,
+        stillAdmitted: sql`COUNT(*) FILTER (WHERE ${admissions.status} <> 'Discharged')`,
+        billed: sql`COALESCE(SUM(${admissions.grandTotal}), 0)`,
+        due: sql`COALESCE(SUM(${admissions.dueAmount}), 0)`,
+        dueCount: sql`COUNT(*) FILTER (WHERE ${admissions.dueAmount} > 0)`,
+      })
       .from(admissions)
       .where(whereClause);
+
+    // Beds occupied right now — independent of the date filter
+    const [occupied] = await db
+      .select({ n: sql`count(*)` })
+      .from(admissions)
+      .where(sql`${admissions.status} <> 'Discharged'`);
 
     const list = await db
       .select()
@@ -101,10 +119,22 @@ export const getAdmissions = async (req, res, next) => {
 
     const meta = buildPaginationMeta(countResult.count, page, limit);
 
+    const billed = Number(countResult.billed || 0);
+    const due = Number(countResult.due || 0);
     res.status(200).json({
       success: true,
       data: list,
       meta,
+      summary: {
+        admissions: Number(countResult.count || 0),
+        discharged: Number(countResult.discharged || 0),
+        stillAdmitted: Number(countResult.stillAdmitted || 0),
+        currentlyAdmitted: Number(occupied?.n || 0),
+        billed,
+        collected: Math.max(0, billed - due),
+        due,
+        dueCount: Number(countResult.dueCount || 0),
+      },
     });
   } catch (error) {
     next(error);

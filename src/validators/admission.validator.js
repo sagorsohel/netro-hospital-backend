@@ -89,4 +89,6 @@ export const admissionListQuerySchema = z.object({
   doctorId: optionalString(),
   page: optionalPositiveInt("Page"),
   limit: optionalPositiveInt("Limit"),
+  from: optionalString(40), // ISO date-time, inclusive
+  to: optionalString(40), // ISO date-time, exclusive
 });

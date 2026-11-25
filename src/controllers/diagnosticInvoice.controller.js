@@ -5,6 +5,7 @@ import { generateId } from "../utils/generateId.js";
 import { getPagination, buildPaginationMeta } from "../utils/pagination.js";
 import { combineConditions, getQueryString } from "../utils/query.js";
 import { ApiError } from "../utils/ApiError.js";
+import { dateRangeConditions } from "../utils/dateRange.js";
 
 /**
  * Generate unique Lab Invoice Number e.g. LAB-2026-0004
@@ -289,7 +290,10 @@ export const getDiagnosticInvoices = async (req, res, next) => {
       );
     }
 
-    if (paymentStatus && paymentStatus !== "all") {
+    if (paymentStatus === "hasDue") {
+      // partial + unpaid: anything with money still owed
+      conditions.push(sql`${diagnosticInvoices.dueAmount} > 0`);
+    } else if (paymentStatus && paymentStatus !== "all") {
       conditions.push(eq(diagnosticInvoices.paymentStatus, paymentStatus));
     }
 
@@ -297,10 +301,22 @@ export const getDiagnosticInvoices = async (req, res, next) => {
       conditions.push(eq(diagnosticInvoices.sampleStatus, sampleStatus));
     }
 
+    // Date range (?from=&to=) on invoice date
+    conditions.push(...dateRangeConditions(req.query, diagnosticInvoices.createdAt));
+
     const whereClause = combineConditions(conditions);
 
+    // Count + totals for the whole filtered period (not just this page)
     const [countResult] = await db
-      .select({ count: sql`count(*)` })
+      .select({
+        count: sql`count(*)`,
+        billed: sql`COALESCE(SUM(${diagnosticInvoices.grandTotal}), 0)`,
+        collected: sql`COALESCE(SUM(${diagnosticInvoices.paidAmount}), 0)`,
+        due: sql`COALESCE(SUM(${diagnosticInvoices.dueAmount}), 0)`,
+        discount: sql`COALESCE(SUM(${diagnosticInvoices.discountAmount}), 0)`,
+        dueCount: sql`COUNT(*) FILTER (WHERE ${diagnosticInvoices.dueAmount} > 0)`,
+        tests: sql`COALESCE(SUM(${diagnosticInvoices.testsCount}), 0)`,
+      })
       .from(diagnosticInvoices)
       .where(whereClause);
 
@@ -318,6 +334,15 @@ export const getDiagnosticInvoices = async (req, res, next) => {
       success: true,
       data: list,
       meta,
+      summary: {
+        invoices: Number(countResult.count || 0),
+        tests: Number(countResult.tests || 0),
+        billed: Number(countResult.billed || 0),
+        collected: Number(countResult.collected || 0),
+        due: Number(countResult.due || 0),
+        discount: Number(countResult.discount || 0),
+        dueCount: Number(countResult.dueCount || 0),
+      },
     });
   } catch (error) {
     next(error);

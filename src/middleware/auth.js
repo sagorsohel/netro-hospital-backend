@@ -3,6 +3,22 @@ import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
+// Shareholder logins are view-only: they may read hospital expenses & equipment,
+// their own profile, and change their own password. Everything else is blocked here,
+// so new routes are closed to shareholders by default.
+const SHAREHOLDER_ALLOWED = [
+  { methods: ["GET"], pattern: /^\/api(\/v1)?\/expenses(\/.*)?$/ },
+  { methods: ["GET"], pattern: /^\/api(\/v1)?\/equipment(\/.*)?$/ },
+  { methods: ["GET"], pattern: /^\/api(\/v1)?\/auth\/me$/ },
+  { methods: ["GET"], pattern: /^\/api(\/v1)?\/shareholders\/me$/ },
+  { methods: ["POST", "PUT"], pattern: /^\/api(\/v1)?\/auth\/change-password$/ },
+];
+
+const isShareholderAllowed = (req) => {
+  const path = (req.originalUrl || "").split("?")[0].replace(/\/+$/, "");
+  return SHAREHOLDER_ALLOWED.some((r) => r.methods.includes(req.method) && r.pattern.test(path));
+};
+
 export const verifyToken = async (req, res, next) => {
 
   try {
@@ -61,6 +77,13 @@ export const verifyToken = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         message: "Account has been deactivated. Please contact administrator.",
+      });
+    }
+
+    if (user.role === "shareholder" && !isShareholderAllowed(req)) {
+      return res.status(403).json({
+        success: false,
+        message: "Shareholder accounts can only view hospital expenses and equipment.",
       });
     }
 

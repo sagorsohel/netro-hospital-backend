@@ -16,6 +16,7 @@ import admissionRoutes from "./admission.routes.js";
 import diagnosticInvoiceRoutes from "./diagnosticInvoice.routes.js";
 import appointmentRoutes from "./appointment.routes.js";
 import shareholderRoutes from "./shareholder.routes.js";
+import sharePlanRoutes from "./sharePlan.routes.js";
 import pharmacyRoutes from "./pharmacy.routes.js";
 import pharmacyUserRoutes from "./pharmacyUser.routes.js";
 import pharmacyAuthRoutes from "./pharmacyAuth.routes.js";
@@ -42,6 +43,7 @@ router.use("/diagnostic-invoices", diagnosticInvoiceRoutes);
 router.use("/appointments", appointmentRoutes);
 router.use("/serials", appointmentRoutes);
 router.use("/shareholders", shareholderRoutes);
+router.use("/share-plans", sharePlanRoutes);
 
 // Pharmacy system (separate auth from hospital users)
 router.use("/pharmacy-auth", pharmacyAuthRoutes);

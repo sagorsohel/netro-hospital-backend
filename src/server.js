@@ -8,6 +8,7 @@ import app from "./app.js";
 import { db } from "./db/index.js";
 import { users } from "./db/schema.js";
 import { seedDatabase } from "./db/seed.js";
+import { ensureShareholderSchema } from "./db/ensureShareholderSchema.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -25,5 +26,12 @@ app.listen(PORT, async () => {
     }
   } catch (err) {
     console.warn("⚠️ Database ping warning:", err.message);
+  }
+
+  // Keep the shareholder tables/columns up to date (safe: never deletes data)
+  try {
+    await ensureShareholderSchema();
+  } catch (err) {
+    console.warn("⚠️ Shareholder schema update failed:", err.message);
   }
 });

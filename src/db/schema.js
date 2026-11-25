@@ -461,8 +461,93 @@ export const shareholders = pgTable("shareholders", {
   bankAccountDetails: varchar("bank_account_details", { length: 500 }),
   status: varchar("status", { length: 50 }).default("Active"), // 'Active', 'Inactive'
   notes: varchar("notes", { length: 1000 }),
+
+  // Human-readable ID, e.g. SH-000001
+  shareholderCode: varchar("shareholder_code", { length: 20 }).unique(),
+
+  // Login account (users.role = 'shareholder') — view-only portal
+  userId: varchar("user_id", { length: 64 }),
+
+  // Identity document: 'NATIONAL_ID', 'PASSPORT', 'BIRTH_REGISTRATION', 'OTHER' (number is in `nid`)
+  identityType: varchar("identity_type", { length: 30 }).default("NATIONAL_ID"),
+  nidFrontImage: varchar("nid_front_image", { length: 500 }),
+  nidBackImage: varchar("nid_back_image", { length: 500 }),
+
+  // Soft delete + who changed it
+  deletedAt: timestamp("deleted_at"),
+  createdBy: varchar("created_by", { length: 64 }),
+  updatedBy: varchar("updated_by", { length: 64 }),
+
+  // Personal details (Share Holder Details form)
+  photo: varchar("photo", { length: 500 }),
+  tinNumber: varchar("tin_number", { length: 50 }),
+  gender: varchar("gender", { length: 20 }),
+  dateOfBirth: varchar("date_of_birth", { length: 50 }),
+  religion: varchar("religion", { length: 50 }),
+  maritalStatus: varchar("marital_status", { length: 30 }),
+  fatherName: varchar("father_name", { length: 255 }),
+  motherName: varchar("mother_name", { length: 255 }),
+  spouseName: varchar("spouse_name", { length: 255 }),
+
+  // { house, area, postalCode, zilla, division }
+  presentAddress: jsonb("present_address").default({}),
+  permanentAddress: jsonb("permanent_address").default({}),
+  // [{ name, phone, sharePercent, relationship, address, nid?, photo? }]
+  nominees: jsonb("nominees").default([]),
+  // Legacy (pre share_purchases) — kept only so old rows can be migrated
+  shares: jsonb("shares").default([]),
+
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 21b. Share plans / packages (admin catalogue)
+export const sharePlans = pgTable("share_plans", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  code: varchar("code", { length: 50 }).notNull().unique(), // e.g. SINGLE-2026
+  name: varchar("name", { length: 255 }).notNull(), // e.g. Single (2026)
+  description: varchar("description", { length: 1000 }),
+  planYear: integer("plan_year"),
+  price: numeric("price", { precision: 14, scale: 2 }),
+  currency: varchar("currency", { length: 10 }).default("BDT"),
+  status: varchar("status", { length: 20 }).default("ACTIVE"), // DRAFT, ACTIVE, INACTIVE
+  createdBy: varchar("created_by", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 21c. Share purchases (one row per share / certificate a shareholder buys)
+export const sharePurchases = pgTable("share_purchases", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  shareholderId: varchar("shareholder_id", { length: 64 }).notNull(),
+  planId: varchar("plan_id", { length: 64 }),
+  planNameSnapshot: varchar("plan_name_snapshot", { length: 255 }),
+  shareNumber: varchar("share_number", { length: 100 }).notNull().unique(),
+  paymentType: varchar("payment_type", { length: 30 }).default("FULL_PAYMENT"), // FULL_PAYMENT, INSTALLMENT
+  purchaseDate: varchar("purchase_date", { length: 20 }),
+  referenceName: varchar("reference_name", { length: 255 }),
+  quantity: integer("quantity").default(1),
+  totalAmount: numeric("total_amount", { precision: 14, scale: 2 }).default("0"),
+  paidAmount: numeric("paid_amount", { precision: 14, scale: 2 }).default("0"),
+  dueAmount: numeric("due_amount", { precision: 14, scale: 2 }).default("0"),
+  paymentStatus: varchar("payment_status", { length: 20 }).default("UNPAID"), // UNPAID, PARTIAL, PAID, OVERDUE, CANCELLED
+  transactionReference: varchar("transaction_reference", { length: 255 }),
+  notes: varchar("notes", { length: 1000 }), // admin-only
+  createdBy: varchar("created_by", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// 21d. Audit log for sensitive admin actions
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  actorId: varchar("actor_id", { length: 64 }),
+  actorName: varchar("actor_name", { length: 255 }),
+  action: varchar("action", { length: 60 }).notNull(), // e.g. SHAREHOLDER_CREATED
+  entityType: varchar("entity_type", { length: 40 }).notNull(), // SHAREHOLDER, SHARE_PLAN, SHARE_PURCHASE
+  entityId: varchar("entity_id", { length: 64 }).notNull(),
+  summary: varchar("summary", { length: 1000 }),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // 22. Shareholder Dividends & Payouts

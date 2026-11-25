@@ -193,16 +193,6 @@ export const updateEquipment = async (req, res, next) => {
   }
 };
 
-    return res.status(200).json({
-      success: true,
-      message: "Equipment updated successfully.",
-      data: updated,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 export const deleteEquipment = async (req, res, next) => {
   try {
     const { id } = req.params;

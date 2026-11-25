@@ -262,6 +262,7 @@ export const equipment = pgTable("equipment", {
   serialNumber: varchar("serial_number", { length: 100 }),
   category: varchar("category", { length: 100 }).notNull(), // 'Diagnostic Imaging', 'Surgical & OT', 'Intensive Care (ICU)', etc.
   quantity: integer("quantity").default(1),
+  price: numeric("price", { precision: 12, scale: 2 }).default("0.00"),
   roomNumber: varchar("room_number", { length: 100 }),
   floor: varchar("floor", { length: 100 }),
   department: varchar("department", { length: 255 }).notNull(),
@@ -274,6 +275,7 @@ export const equipment = pgTable("equipment", {
   serviceNotes: varchar("service_notes", { length: 1000 }),
   technicianContact: varchar("technician_contact", { length: 100 }),
   photo: varchar("photo", { length: 500 }),
+  images: jsonb("images").default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

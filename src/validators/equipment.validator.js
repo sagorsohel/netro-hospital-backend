@@ -15,6 +15,7 @@ const equipmentFields = {
   serialNumber: optionalString(100),
   category: requiredString("Category", 100),
   quantity: optionalPositiveInt("Quantity"),
+  price: z.union([z.number(), z.string()]).optional().nullable(),
   roomNumber: optionalString(100),
   floor: optionalString(100),
   department: requiredString("Department"),
@@ -27,6 +28,7 @@ const equipmentFields = {
   serviceNotes: optionalString(1000),
   technicianContact: optionalString(100),
   photo: optionalString(500),
+  images: z.array(z.string()).optional().default([]),
 };
 
 export const createEquipmentSchema = z.object(equipmentFields);

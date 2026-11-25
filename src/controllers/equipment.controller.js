@@ -122,7 +122,10 @@ export const getEquipmentById = async (req, res, next) => {
 // Body is validated & trimmed by createEquipmentSchema
 export const createEquipment = async (req, res, next) => {
   try {
-    const { quantity, status, ...item } = req.body;
+    const { quantity, status, images, photo, price, ...item } = req.body;
+
+    const imgList = Array.isArray(images) ? images : [];
+    const mainPhoto = photo || (imgList.length > 0 ? imgList[0] : null);
 
     const [newItem] = await db
       .insert(equipment)
@@ -131,6 +134,9 @@ export const createEquipment = async (req, res, next) => {
         id: generateId("eq"),
         quantity: quantity || 1,
         status: status || "Functional",
+        price: price !== undefined && price !== null && price !== "" ? String(price) : "0.00",
+        photo: mainPhoto,
+        images: imgList,
       })
       .returning();
 
@@ -157,11 +163,35 @@ export const updateEquipment = async (req, res, next) => {
       });
     }
 
+    const updatePayload = { ...req.body, updatedAt: new Date() };
+
+    if (req.body.price !== undefined) {
+      updatePayload.price = req.body.price !== null && req.body.price !== "" ? String(req.body.price) : "0.00";
+    }
+
+    if (req.body.images !== undefined) {
+      const imgList = Array.isArray(req.body.images) ? req.body.images : [];
+      updatePayload.images = imgList;
+      if (!updatePayload.photo && imgList.length > 0) {
+        updatePayload.photo = imgList[0];
+      }
+    }
+
     const [updated] = await db
       .update(equipment)
-      .set({ ...req.body, updatedAt: new Date() })
+      .set(updatePayload)
       .where(eq(equipment.id, id))
       .returning();
+
+    return res.status(200).json({
+      success: true,
+      message: "Equipment updated successfully.",
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
     return res.status(200).json({
       success: true,
